@@ -1,0 +1,18 @@
+.fill {
+  width: 100%;
+  height: 100%;
+}
+
+.half-fill-v {
+  width: 100%;
+  height: 33%;
+}
+
+.tooltip {
+  position: absolute;
+  text-align: center;
+  background: lightsteelblue;
+  border-radius: 0.5rem;
+  pointer-events: none;
+  padding: 0.5rem;
+}
