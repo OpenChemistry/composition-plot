@@ -21,6 +21,21 @@ export function scalarToColor(
   return color;
 }
 
+// const lineColors: [number, number, number][] = [
+  // [1, 0, 0],
+  // [0, 1, 0],
+  // [0, 0, 1]
+// ]
+
+export function* getLineColor() {
+  let i = 0;
+  while(true) {
+    let idx = i % viridis.length;
+    yield viridis[idx];
+    i += 4;
+  }
+}
+
 export const viridis : [number, number, number][] = [
   [0.267004, 0.004874, 0.329415],
   [0.282327, 0.094955, 0.417331],

@@ -1,6 +1,6 @@
 import { Selection, BaseType, select } from 'd3-selection';
 import { line, curveLinearClosed } from 'd3-shape';
-
+import {has} from 'lodash-es';
 import { Ingredient } from '../types';
 import { scalarToColor } from '../utils/colors';
 import { ScaleLinear, scaleLinear } from 'd3-scale';
@@ -23,6 +23,9 @@ class TernaryPlot {
   colorMap: [number, number, number][] = [];
   colorMapRange: [number, number] = [0, 1];
   valueKey: string = 'Jmin.mAcm2';
+
+  onSelect: Function;
+  onDeselect: Function;
 
   constructor(name: string, svg: HTMLElement, upsideDown: boolean = false) {
     this.name = name;
@@ -144,7 +147,8 @@ class TernaryPlot {
         .datum(this.vertices)
         .attr('d', outlineFn)
         .attr('fill', 'transparent')
-        .attr('stroke', 'rgba(0, 0, 0, 0.7');
+        .attr('stroke', 'rgba(0, 0, 0, 0.7')
+        .attr('stroke-width', 1.5);
 
 
     let gridlineFn = line()
@@ -154,7 +158,7 @@ class TernaryPlot {
     // Add major grid lines
     for (let i = 0; i < 3; ++ i) {
       const delta = this.ingredients[i].extent[1] - this.ingredients[i].extent[0];
-      const n = Math.floor(delta / this.ingredients[i].spacing);
+      const n = Math.round(delta / this.ingredients[i].spacing);
 
       for (let j = 1; j < n; ++j) {
         let points: [number, number, number][] = [
@@ -189,9 +193,12 @@ class TernaryPlot {
       ]
     })
 
+    const selectedHexagons = {};
+
     let hexFn = line()
       .x((d) => d[0])
-      .y((d) => d[1]);
+      .y((d) => d[1])
+      .curve(curveLinearClosed);
 
     this.dataGroup
       .selectAll('path')
@@ -228,6 +235,25 @@ class TernaryPlot {
         .on('mouseout', () => {
           this.dataTooltip
             .style('opacity', 0);
+        })
+        .on('click', (d, i, targets) => {
+          d;
+          if (has(selectedHexagons, i)) {
+            delete selectedHexagons[i];
+            select(targets[i])
+              .attr('stroke-width', 0);
+            if (this.onDeselect) {
+              this.onDeselect(this.data[i]);
+            }
+          } else {
+            selectedHexagons[i] = true;
+            select(targets[i])
+              .attr('stroke', 'red')
+              .attr('stroke-width', 2);
+            if (this.onSelect) {
+              this.onSelect(this.data[i]);
+            }
+          }
         });
   }
 
@@ -248,6 +274,7 @@ class TernaryPlot {
 
   _makeHexagon(cart: [number, number, number]) : [number, number][] {
     let radius = 1 / Math.sqrt(3) * this.edge * this.ingredients[0].spacing / (this.ingredients[0].extent[1] - this.ingredients[0].extent[0]);
+    // radius *= 0.99;
     let center = this.cartToxy(cart);
     let points: [number, number][] = [];
     for (let i = 0; i < 6; ++i) {

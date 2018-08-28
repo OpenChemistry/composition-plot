@@ -1,6 +1,7 @@
 import { Component, Element } from '@stencil/core';
 
 import { TernaryPlot } from '../../plots/ternary';
+import { Spectrum } from '../../plots/spectrum';
 
 import { Ingredient } from '../../types';
 
@@ -21,9 +22,11 @@ export class MyComponent {
   fullData: any[];
 
   plotsContainer: HTMLElement;
-  svgElement: HTMLElement;
+  compositionElement: HTMLElement;
+  spectrumElement: HTMLElement;
 
   ingredients: Ingredient[];
+  spectrum: Spectrum;
 
   componentWillLoad() {
     // lets make some fake data
@@ -75,9 +78,30 @@ export class MyComponent {
     for (let i = 0; i < 3; ++i) {
       let constValue = i * spacing;
       let edge = Math.floor(edgeUnit * (1 - constValue * 4));
-      this.plotShell(this.svgElement, constValue, edge, start);
+      this.plotShell(this.compositionElement, constValue, edge, start);
       start += 2 * edge + 0.2 * edgeUnit;
     }
+
+    this.spectrum = new Spectrum(this.spectrumElement);
+    this.spectrum.setOffset(0.2);
+  }
+
+  onSelect = (d) => {
+    const n = 1000;
+    const center = n / 2 + Math.random() * n / 100;
+    const sigma = (1 + Math.random()) * 20;
+    let points = [];
+    for (let i = 0; i < n; ++i) {
+      let x = i;
+      let y = Math.exp(-(((x - center) / sigma)**2));
+      points.push({x, y})
+    }
+
+    this.spectrum.appendSpectrum(points, d);
+  }
+
+  onDeselect = (d) => {
+    this.spectrum.removeSpectrum(d);
   }
 
   plotShell(svg: HTMLElement, constValue: number, edge: number, shift: number) {
@@ -88,9 +112,12 @@ export class MyComponent {
       let left = shift + i * (edge / 2);
       let right = left + edge;
       plot.setSize(left, right);
+      plot.onSelect = this.onSelect;
+      plot.onDeselect = this.onDeselect;
       plots.push(plot);
     }
 
+    let shellData: any[];
     let slicedData: any[];
     let A = {...this.ingredients[0]};
     let B = {...this.ingredients[1]};
@@ -105,41 +132,35 @@ export class MyComponent {
     let mapRange: [number, number] = [-40, 0];
     let eps = 1e-6;
 
-    slicedData = this.fullData
-      .filter((val) => Math.abs(val[D.key] - constValue) < eps)
+    shellData = this.fullData
       .filter((val) => val[A.key] >= constValue)
       .filter((val) => val[B.key] >= constValue)
-      .filter((val) => val[C.key] >= constValue);
+      .filter((val) => val[C.key] >= constValue)
+      .filter((val) => val[D.key] >= constValue);
+
+    slicedData = shellData
+      .filter((val) => Math.abs(val[D.key] - constValue) < eps);
     plots[0].setColorMap(viridis, mapRange);
     plots[0].setAxes(A, B, C, D);
     plots[0].setData(slicedData);
 
-    slicedData = this.fullData
+    slicedData = shellData
       .filter((val) => Math.abs(val[A.key] - constValue) < eps)
-      .filter((val) => Math.abs(val[D.key] - constValue) > eps)
-      .filter((val) => val[B.key] >= constValue)
-      .filter((val) => val[C.key] >= constValue)
-      .filter((val) => val[D.key] >= constValue);
+      .filter((val) => Math.abs(val[D.key] - constValue) > eps);
     plots[1].setColorMap(viridis, mapRange);
     plots[1].setAxes(C, D, B, A);
     plots[1].setData(slicedData);
 
-    slicedData = this.fullData
+    slicedData = shellData
       .filter((val) => Math.abs(val[C.key] - constValue) < eps)
-      .filter((val) => Math.abs(val[A.key] - constValue) > eps)
-      .filter((val) => val[A.key] >= constValue)
-      .filter((val) => val[B.key] >= constValue)
-      .filter((val) => val[D.key] >= constValue);
+      .filter((val) => Math.abs(val[A.key] - constValue) > eps);
     plots[2].setColorMap(viridis, mapRange);
     plots[2].setAxes(B, A, D, C);
     plots[2].setData(slicedData);
 
-    slicedData = this.fullData
+    slicedData = shellData
       .filter((val) => Math.abs(val[B.key] - constValue) < eps)
-      .filter((val) => Math.abs(val[C.key] - constValue) > eps)
-      .filter((val) => val[A.key] >= constValue)
-      .filter((val) => val[C.key] >= constValue)
-      .filter((val) => val[D.key] >= constValue);
+      .filter((val) => Math.abs(val[C.key] - constValue) > eps);
     plots[3].setColorMap(viridis, mapRange);
     plots[3].setAxes(D, C, A, B);
     plots[3].setData(slicedData);
@@ -150,7 +171,12 @@ export class MyComponent {
   render() {
     return (
       <div class="fill" ref={(ref) => {this.plotsContainer = ref;}}>
-        <svg class="fill" ref={(ref) => {this.svgElement = ref;}}></svg>
+        <div class="fill-half-v">
+          <svg class="fill" ref={(ref) => {this.compositionElement = ref;}}></svg>
+        </div>
+        <div class="fill-half-v">
+          <svg class="fill" ref={(ref) => {this.spectrumElement = ref;}}></svg>
+        </div>
       </div>
     );
   }
