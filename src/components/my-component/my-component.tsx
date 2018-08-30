@@ -150,7 +150,7 @@ export class MyComponent {
     return (
       <div class="fill" ref={(ref) => {this.plotsContainer = ref;}}>
         <div class="fill-half-v">
-          <svg class="fill" ref={(ref) => {this.compositionElement = ref;}}></svg>
+          <svg class="fill" draggable={false} ref={(ref) => {this.compositionElement = ref;}}></svg>
         </div>
         <div class="fill-half-v">
           <svg class="fill" ref={(ref) => {this.spectrumElement = ref;}}></svg>

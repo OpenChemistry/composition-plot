@@ -75,7 +75,10 @@ class TernaryPlot {
       .style('font-family', 'sans-serif')
       .style('font-size', 'small');
 
-    // this.svg.addEventListener('mousedown')
+    this.svg.addEventListener('mousedown', () => {this.mouseDown = true});
+    this.svg.addEventListener('mouseup', () => {this.mouseDown = false});
+    // dragging randomly gets in the way
+    this.svg.addEventListener('dragstart', (e) => {e.preventDefault()});
   }
 
   setSize(left: number, right: number) {
@@ -233,7 +236,25 @@ class TernaryPlot {
           let color = scalarToColor(this.data.samples[i].values[this.valueIndex], this.colorMap, this.colorMapRange);
           return `rgb(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255})`
         })
-        .on('mouseover', (d, i) => {
+        .on('mouseover', (d, i, targets) => {
+          if (this.mouseDown) {
+            if (has(selectedHexagons, i)) {
+              delete selectedHexagons[i];
+              select(targets[i])
+                .attr('stroke-width', 0);
+              if (this.onDeselect) {
+                this.onDeselect(this.data.samples[i]);
+              }
+            } else {
+              selectedHexagons[i] = true;
+              select(targets[i])
+                .attr('stroke', 'red')
+                .attr('stroke-width', 2);
+              if (this.onSelect) {
+                this.onSelect(this.data.samples[i]);
+              }
+            }
+          }
           // d is the datum, i is the index in the data
           this.dataTooltip.html(`
             ${this.data.elements[this.plotOptions.componentsIdx[0]]}: ${points3d[i][0].toFixed(2)}<br>
@@ -254,7 +275,7 @@ class TernaryPlot {
           this.dataTooltip
             .style('opacity', 0);
         })
-        .on('click', (d, i, targets) => {
+        .on('mousedown', (d, i, targets) => {
           d;
           if (has(selectedHexagons, i)) {
             delete selectedHexagons[i];
