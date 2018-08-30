@@ -12,6 +12,7 @@ interface IPlotOptions {
   spacing: number[];
   range: number[][];
 }
+
 class TernaryPlot {
 
   name: string;
@@ -25,10 +26,8 @@ class TernaryPlot {
   scales: ScaleLinear<number, number>[];
   edge: number;
   data: IDataSet;
-  colorMap: [number, number, number][] = [];
+  colorMap: [number, number, number][];
   colorMapRange: [number, number] = [0, 1];
-  valueKey: string = 'Jmin.mAcm2';
-  valueIndex: number = 2;
   plotOptions: IPlotOptions;
 
   spacing: number[];
@@ -221,84 +220,108 @@ class TernaryPlot {
       .y((d) => d[1])
       .curve(curveLinearClosed);
 
-    this.dataGroup
+    const fillFn = (d, i) => {
+      if (! this.colorMap) {
+        return 'rgba(0, 0, 0, 0.2';
+      }
+      // console.log(d);
+      d;
+      let color = scalarToColor(this.data.samples[i].values[this.plotOptions.scalarIdx], this.colorMap, this.colorMapRange);
+      return `rgb(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255})`
+    }
+
+    const onMouseOver = (d, i, targets) => {
+      if (this.mouseDown) {
+        if (has(selectedHexagons, i)) {
+          delete selectedHexagons[i];
+          select(targets[i])
+            .attr('stroke-width', 0);
+          if (this.onDeselect) {
+            this.onDeselect(this.data.samples[i]);
+          }
+        } else {
+          selectedHexagons[i] = true;
+          select(targets[i])
+            .attr('stroke', 'red')
+            .attr('stroke-width', 2);
+          if (this.onSelect) {
+            this.onSelect(this.data.samples[i]);
+          }
+        }
+      }
+      // d is the datum, i is the index in the data
+      this.dataTooltip.html(`
+        ${this.data.elements[this.plotOptions.componentsIdx[0]]}: ${points3d[i][0].toFixed(2)}<br>
+        ${this.data.elements[this.plotOptions.componentsIdx[1]]}: ${points3d[i][1].toFixed(2)}<br>
+        ${this.data.elements[this.plotOptions.componentsIdx[2]]}: ${points3d[i][2].toFixed(2)}<br>
+        ${this.plotOptions.constantComponentIdx
+          ? `${this.data.elements[this.plotOptions.constantComponentIdx]}: ${this.data.samples[i].components[this.plotOptions.constantComponentIdx].toFixed(2)}<br>`
+          : ``}
+        ${this.data.scalars[this.plotOptions.scalarIdx]}: ${this.data.samples[i].values[this.plotOptions.scalarIdx].toFixed(2)}<br>
+      `)
+      this.dataTooltip
+        .style('opacity', 0.9)
+        .style('left', `${d[0][0] + this.svg.clientLeft}px`)
+        .style('top', `${d[0][1] + this.svg.clientTop}px`)
+        .style('transform', `translateY(-100%)`);
+    }
+
+    const onMouseOut = () => {
+      this.dataTooltip
+        .style('opacity', 0);
+    }
+
+    const onMouseDown = (d, i, targets) => {
+      d;
+      if (has(selectedHexagons, i)) {
+        delete selectedHexagons[i];
+        select(targets[i])
+          .attr('stroke-width', 0);
+        if (this.onDeselect) {
+          this.onDeselect(this.data.samples[i]);
+        }
+      } else {
+        selectedHexagons[i] = true;
+        select(targets[i])
+          .attr('stroke', 'red')
+          .attr('stroke-width', 2);
+        if (this.onSelect) {
+          this.onSelect(this.data.samples[i]);
+        }
+      }
+    }
+
+    const hexagons = this.dataGroup
       .selectAll('path')
-      .data(points3d)
+      .data(points3d);
+
+    // Enter
+    hexagons
       .enter()
         .append('path')
         .datum((d) => this._makeHexagon(d))
         .attr('d', hexFn)
-        .attr('fill', (d, i) => {
-          if (! this.colorMap) {
-            return 'rgba(0, 0, 0, 0.2';
-          }
-          d;
-          let color = scalarToColor(this.data.samples[i].values[this.valueIndex], this.colorMap, this.colorMapRange);
-          return `rgb(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255})`
-        })
-        .on('mouseover', (d, i, targets) => {
-          if (this.mouseDown) {
-            if (has(selectedHexagons, i)) {
-              delete selectedHexagons[i];
-              select(targets[i])
-                .attr('stroke-width', 0);
-              if (this.onDeselect) {
-                this.onDeselect(this.data.samples[i]);
-              }
-            } else {
-              selectedHexagons[i] = true;
-              select(targets[i])
-                .attr('stroke', 'red')
-                .attr('stroke-width', 2);
-              if (this.onSelect) {
-                this.onSelect(this.data.samples[i]);
-              }
-            }
-          }
-          // d is the datum, i is the index in the data
-          this.dataTooltip.html(`
-            ${this.data.elements[this.plotOptions.componentsIdx[0]]}: ${points3d[i][0].toFixed(2)}<br>
-            ${this.data.elements[this.plotOptions.componentsIdx[1]]}: ${points3d[i][1].toFixed(2)}<br>
-            ${this.data.elements[this.plotOptions.componentsIdx[2]]}: ${points3d[i][2].toFixed(2)}<br>
-            ${this.plotOptions.constantComponentIdx
-              ? `${this.data.elements[this.plotOptions.constantComponentIdx]}: ${this.data.samples[i].components[this.plotOptions.constantComponentIdx].toFixed(2)}<br>`
-              : ``}
-            ${this.valueKey}: ${this.data.samples[i].values[this.valueIndex].toFixed(2)}<br>
-          `)
-          this.dataTooltip
-            .style('opacity', 0.9)
-            .style('left', `${d[0][0] + this.svg.clientLeft}px`)
-            .style('top', `${d[0][1] + this.svg.clientTop}px`)
-            .style('transform', `translateY(-100%)`);
-        })
-        .on('mouseout', () => {
-          this.dataTooltip
-            .style('opacity', 0);
-        })
-        .on('mousedown', (d, i, targets) => {
-          d;
-          if (has(selectedHexagons, i)) {
-            delete selectedHexagons[i];
-            select(targets[i])
-              .attr('stroke-width', 0);
-            if (this.onDeselect) {
-              this.onDeselect(this.data.samples[i]);
-            }
-          } else {
-            selectedHexagons[i] = true;
-            select(targets[i])
-              .attr('stroke', 'red')
-              .attr('stroke-width', 2);
-            if (this.onSelect) {
-              this.onSelect(this.data.samples[i]);
-            }
-          }
-        });
+        .attr('fill', fillFn)
+        .on('mouseover', onMouseOver)
+        .on('mouseout', onMouseOut)
+        .on('mousedown', onMouseDown);
+
+    // Update
+    hexagons
+      .datum((d) => this._makeHexagon(d))
+      .attr('d', hexFn)
+      .attr('fill', fillFn)
+      .on('mouseover', onMouseOver)
+      .on('mouseout', onMouseOut)
+      .on('mousedown', onMouseDown);
+
+    //Remove
   }
 
   setColorMap(map: [number, number, number][], range: [number, number]) {
     this.colorMap = map;
     this.colorMapRange = range;
+    this.drawData();
   }
 
   _makeHexagon(cart: [number, number, number]) : [number, number][] {
@@ -316,7 +339,7 @@ class TernaryPlot {
     return points;
   }
 
-  setData(data: IDataSet, scalar: string = null, components: string[] = null, constantComponent: string = null) {
+  setData(data: IDataSet, components: string[] = null, constantComponent: string = null) {
     this.data = data;
 
     this.scales = [];
@@ -350,7 +373,7 @@ class TernaryPlot {
     }
 
     this.plotOptions = {
-      scalarIdx: scalar ? data.scalars.findIndex((val) => val === scalar) : 0,
+      scalarIdx: 0,
       componentsIdx: components ? components.map(c => data.elements.findIndex(el => el === c)) : [0, 1, 2],
       constantComponentIdx: constantComponent ? data.elements.findIndex((val) => val === constantComponent) : null,
       spacing: spacing,
@@ -358,6 +381,16 @@ class TernaryPlot {
     }
 
     this.drawGrid();
+    this.drawData();
+  }
+
+  selectScalar(scalar: string) {
+    this.plotOptions = {
+      ...this.plotOptions,
+      scalarIdx: scalar ? this.data.scalars.findIndex((val) => val === scalar) : 0
+    }
+
+    // this.drawGrid();
     this.drawData();
   }
 
