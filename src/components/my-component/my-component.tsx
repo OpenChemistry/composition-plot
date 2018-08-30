@@ -3,11 +3,13 @@ import { Component, Element } from '@stencil/core';
 import { TernaryPlot } from '../../plots/ternary';
 import { Spectrum } from '../../plots/spectrum';
 
-import { Ingredient } from '../../types';
+import { IDataSet, ISample, ISpectrum } from '../../types';
 
 import { viridis } from '../../utils/colors';
 
-import sampleData from '../../sample-data/FeMnNiZn.json';
+import { fetchSpectrum } from '../../rest';
+
+import sampleData from '../../assets/experiment.json';
 // import { generateRandom } from '../../sample-data/random';
 
 @Component({
@@ -19,60 +21,22 @@ export class MyComponent {
 
   @Element() el: HTMLElement;
 
-  fullData: any[];
+  fullData: IDataSet;
 
   plotsContainer: HTMLElement;
   compositionElement: HTMLElement;
   spectrumElement: HTMLElement;
 
-  ingredients: Ingredient[];
   spectrum: Spectrum;
 
   componentWillLoad() {
     // lets make some fake data
     // generate some random data
-    const m = 11;
-    const extent: [number, number] = [0, 1];
-    const spacing = (extent[1] - extent[0]) / (m -1);
-
-    let A: Ingredient = {
-      key: 'Zn',
-      label: 'Zn',
-      extent: extent,
-      spacing: spacing
-    };
-    let B: Ingredient = {
-      key: 'Fe',
-      label: 'Fe',
-      extent: extent,
-      spacing: spacing
-    };
-    let C: Ingredient = {
-      key: 'Mn',
-      label: 'Mn',
-      extent: extent,
-      spacing: spacing
-    };
-    let D: Ingredient = {
-      key: 'Ni',
-      label: 'Ni',
-      extent: extent,
-      spacing: spacing
-    }
-
-    this.ingredients = [A, B, C, D];
-    // this.fullData = generateRandom(
-    //   [A.key, B.key, C.key, D.key],
-    //   ['Jmin.mAcm2'],
-    //   extent,
-    //   spacing
-    // )
     this.fullData = sampleData;
-
   }
 
   componentDidLoad() {
-    const spacing = this.ingredients[0].spacing;
+    const spacing = this.fullData.spacing ? this.fullData.spacing[0] : 0.1;
     let start = 50;
     const edgeUnit = 350;
     for (let i = 0; i < 3; ++i) {
@@ -83,21 +47,28 @@ export class MyComponent {
     }
 
     this.spectrum = new Spectrum(this.spectrumElement);
-    this.spectrum.setOffset(0.2);
+    this.spectrum.setOffset(0);
   }
 
   onSelect = (d) => {
-    const n = 1000;
-    const center = n / 2 + Math.random() * n / 100;
-    const sigma = (1 + Math.random()) * 20;
-    let points = [];
-    for (let i = 0; i < n; ++i) {
-      let x = i;
-      let y = Math.exp(-(((x - center) / sigma)**2));
-      points.push({x, y})
-    }
-
-    this.spectrum.appendSpectrum(points, d);
+    fetchSpectrum(d.id)
+      .then((val: any) => {
+        let spectrum: ISpectrum = {};
+        for (let key in val) {
+          spectrum[key] = val[key].map((n) => parseFloat(n)).slice(50);
+        }
+        let metaData = {
+          elements: this.fullData.elements,
+          components: d.components,
+          id: d.id
+        }
+        this.spectrum.setAxes('t(s)', 'J(mAcm2)');
+        // this.spectrum.setAxes('t(s)', 'Ewe(Vrhe)');
+        // this.spectrum.setAxes('J(mAcm2)', 'Ewe(Vrhe)');
+        // this.spectrum.setAxes('Ewe(Vrhe)', 'J(mAcm2)');
+        // this.spectrum.setAxes('J(mAcm2)', 'J(mAcm2)');
+        this.spectrum.appendSpectrum(spectrum, metaData);
+      })
   }
 
   onDeselect = (d) => {
@@ -117,55 +88,62 @@ export class MyComponent {
       plots.push(plot);
     }
 
-    let shellData: any[];
-    let slicedData: any[];
-    let A = {...this.ingredients[0]};
-    let B = {...this.ingredients[1]};
-    let C = {...this.ingredients[2]};
-    let D = {...this.ingredients[3]};
-    A.extent = [A.extent[0] + constValue, A.extent[1] - 3 * constValue];
-    B.extent = [B.extent[0] + constValue, B.extent[1] - 3 * constValue];
-    C.extent = [C.extent[0] + constValue, C.extent[1] - 3 * constValue];
-    D.extent = [D.extent[0] + constValue, D.extent[1] - 3 * constValue];
+    let shellData: IDataSet;
+
+    const Aidx = 0;
+    const Bidx = 1;
+    const Cidx = 2;
+    const Didx = 3;
+    const scalarKey = 'Jmax.mAcm2';
+
+    shellData = {
+      ...this.fullData,
+      range: this.fullData.range
+        ? [
+          [this.fullData.range[0][0] + constValue, this.fullData.range[0][1] - 3 * constValue],
+          [this.fullData.range[1][0] + constValue, this.fullData.range[1][1] - 3 * constValue],
+          [this.fullData.range[2][0] + constValue, this.fullData.range[2][1] - 3 * constValue]
+        ]
+        : [
+          [0 + constValue, 1 - 3 * constValue],
+          [0 + constValue, 1 - 3 * constValue],
+          [0 + constValue, 1 - 3 * constValue]
+        ],
+      samples: this.fullData.samples
+        .filter((val) => val.components[Aidx] >= constValue)
+        .filter((val) => val.components[Bidx] >= constValue)
+        .filter((val) => val.components[Cidx] >= constValue)
+        .filter((val) => val.components[Didx] >= constValue)
+    }
 
     // let mapRange: [number, number] = [0, 1];
     let mapRange: [number, number] = [-40, 0];
     let eps = 1e-6;
 
-    shellData = this.fullData
-      .filter((val) => val[A.key] >= constValue)
-      .filter((val) => val[B.key] >= constValue)
-      .filter((val) => val[C.key] >= constValue)
-      .filter((val) => val[D.key] >= constValue);
+    const permutations = [
+      [Aidx, Bidx, Cidx, Didx],
+      [Cidx, Didx, Bidx, Aidx],
+      [Bidx, Aidx, Didx, Cidx],
+      [Didx, Cidx, Aidx, Bidx],
+    ]
 
-    slicedData = shellData
-      .filter((val) => Math.abs(val[D.key] - constValue) < eps);
-    plots[0].setColorMap(viridis, mapRange);
-    plots[0].setAxes(A, B, C, D);
-    plots[0].setData(slicedData);
-
-    slicedData = shellData
-      .filter((val) => Math.abs(val[A.key] - constValue) < eps)
-      .filter((val) => Math.abs(val[D.key] - constValue) > eps);
-    plots[1].setColorMap(viridis, mapRange);
-    plots[1].setAxes(C, D, B, A);
-    plots[1].setData(slicedData);
-
-    slicedData = shellData
-      .filter((val) => Math.abs(val[C.key] - constValue) < eps)
-      .filter((val) => Math.abs(val[A.key] - constValue) > eps);
-    plots[2].setColorMap(viridis, mapRange);
-    plots[2].setAxes(B, A, D, C);
-    plots[2].setData(slicedData);
-
-    slicedData = shellData
-      .filter((val) => Math.abs(val[B.key] - constValue) < eps)
-      .filter((val) => Math.abs(val[C.key] - constValue) > eps);
-    plots[3].setColorMap(viridis, mapRange);
-    plots[3].setAxes(D, C, A, B);
-    plots[3].setData(slicedData);
-
-    slicedData;
+    for (let i = 0; i < permutations.length; ++i) {
+      let perm = permutations[i];
+      let slicedSamples: ISample[] = shellData.samples
+        .filter((val) => Math.abs(val.components[perm[3]] - constValue) < eps);
+      if (i > 0) {
+        // Don't include twice the points along shared lines
+        slicedSamples = slicedSamples
+          .filter((val) => Math.abs(val.components[perm[1]] - constValue) > eps);
+      }
+      plots[i].setColorMap(viridis, mapRange);
+      plots[i].setData(
+        {...shellData, samples: slicedSamples},
+        scalarKey,
+        perm.slice(0, 3).map(idx => shellData.elements[idx]),
+        shellData.elements[perm[3]]
+      );
+    }
   }
 
   render() {

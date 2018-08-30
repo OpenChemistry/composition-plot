@@ -24,4 +24,4 @@ Thumbs.db
 UserInterfaceState.xcuserstate
 .env
 
-FeMnNiZn.json
+src/assets/*.json

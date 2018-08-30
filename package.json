@@ -33,6 +33,7 @@
     "@types/d3-shape": "^1.2.3",
     "@types/d3-transition": "^1.1.2",
     "@types/jest": "^23.3.1",
+    "@types/lodash-es": "^4.17.1",
     "jest": "^23.4.2"
   },
   "author": "Alessandro Genova, Kitware Inc.",
