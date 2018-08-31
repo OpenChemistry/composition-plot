@@ -77,6 +77,13 @@ class Spectrum {
     this.drawSpectra();
   }
 
+  removeSpectra() {
+    this.spectra = [];
+    this.setScales();
+    this.drawAxes();
+    this.drawSpectra();
+  }
+
   setAxes(xKey: string, yKey: string) {
     this.plotOptions = {xKey, yKey};
     this.setScales();
@@ -86,6 +93,9 @@ class Spectrum {
 
   setOffset(offset: number) {
     this.offset = offset;
+    this.setScales();
+    this.drawAxes();
+    this.drawSpectra();
   }
 
   setScales() {
@@ -185,7 +195,8 @@ class Spectrum {
         // .transition()
         .attr('stroke-width', boldStrokeWidth);
       let [x, y] = mouse(targets[i]);
-      y += this.svg.getBoundingClientRect().top;
+      // x += this.svg.getBoundingClientRect().left;
+      // y += this.svg.getBoundingClientRect().top;
       const meta = this.spectra[i].meta;
       let innerHtml = '';
       for (let [key, val] of zip(meta.elements, meta.components)) {
@@ -212,8 +223,8 @@ class Spectrum {
 
     // Update
     plots
-      .datum((d) => {
-        return zip(d.spectrum[this.plotOptions.xKey], d.spectrum[this.plotOptions.yKey]);
+      .datum((d, i) => {
+        return zip(d.spectrum[this.plotOptions.xKey], d.spectrum[this.plotOptions.yKey].map(val => val + i * this.offset));
       })
       .attr('d', lineFn)
       .attr('fill', 'none')
@@ -228,8 +239,8 @@ class Spectrum {
     // Enter
     plots.enter()
       .append('path')
-      .datum((d) => {
-        return zip(d.spectrum[this.plotOptions.xKey], d.spectrum[this.plotOptions.yKey]);
+      .datum((d, i) => {
+        return zip(d.spectrum[this.plotOptions.xKey], d.spectrum[this.plotOptions.yKey].map(val => val + i * this.offset));
       })
       .attr('d', lineFn)
       .attr('fill', 'none')

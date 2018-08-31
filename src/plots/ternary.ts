@@ -250,6 +250,8 @@ class TernaryPlot {
         }
       }
       // d is the datum, i is the index in the data
+      let [x, y] = d[0];
+
       this.dataTooltip.html(`
         ${this.data.elements[this.plotOptions.componentsIdx[0]]}: ${points3d[i][0].toFixed(2)}<br>
         ${this.data.elements[this.plotOptions.componentsIdx[1]]}: ${points3d[i][1].toFixed(2)}<br>
@@ -261,8 +263,8 @@ class TernaryPlot {
       `)
       this.dataTooltip
         .style('opacity', 0.9)
-        .style('left', `${d[0][0] + this.svg.clientLeft}px`)
-        .style('top', `${d[0][1] + this.svg.clientTop}px`)
+        .style('left', `${x}px`)
+        .style('top', `${y}px`)
         .style('transform', `translateY(-100%)`);
     }
 

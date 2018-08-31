@@ -25,3 +25,5 @@ UserInterfaceState.xcuserstate
 .env
 
 src/assets/*.json
+esm
+
