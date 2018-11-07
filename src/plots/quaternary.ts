@@ -122,7 +122,8 @@ class QuaternaryPlot {
       const newAxes: {[element: string]: IAxis} = {
         [perm[0]]: { ...axes[perm[0]], range: [constValue, 1 - 3 * constValue]},
         [perm[1]]: { ...axes[perm[1]], range: [constValue, 1 - 3 * constValue]},
-        [perm[2]]: { ...axes[perm[2]], range: [constValue, 1 - 3 * constValue]}
+        [perm[2]]: { ...axes[perm[2]], range: [constValue, 1 - 3 * constValue]},
+        [perm[3]]: { ...axes[perm[3]], range: [constValue, constValue]}
       }
       plots[i].dp.setAxes(newAxes);
       plots[i].dp.setActiveScalar(this.dp.getActiveScalar());
