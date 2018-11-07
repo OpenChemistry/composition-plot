@@ -3,22 +3,16 @@ import { extent } from 'd3-array';
 import { axisBottom, axisLeft } from 'd3-axis';
 // import { line, curveLinearClosed } from 'd3-shape';
 
-import { ISpectrum } from '../types';
+import { ISpectrum, ISample } from '../types';
 import { ScaleLinear, scaleLinear } from 'd3-scale';
 import { line } from 'd3-shape';
 import { getLineColor } from '../utils/colors';
 
-import { has, zip } from 'lodash-es';
+import { has, zip, isNil } from 'lodash-es';
 
 interface IPlotOptions {
   xKey: string;
   yKey: string;
-}
-
-interface IMetaData {
-  elements: string[];
-  components: number[];
-  id: number;
 }
 
 class Spectrum {
@@ -27,7 +21,7 @@ class Spectrum {
   svg: HTMLElement;
   xScale: ScaleLinear<number, number>;
   yScale: ScaleLinear<number, number>;
-  spectra: {spectrum: ISpectrum, meta: IMetaData}[] = [];
+  spectra: {spectrum: ISpectrum; sample: ISample}[] = [];
   dataTooltip: Selection<BaseType, {}, null, undefined>;
   dataGroup: Selection<BaseType, {}, null, undefined>;
   axesGroup: Selection<BaseType, {}, null, undefined>;
@@ -58,27 +52,20 @@ class Spectrum {
       .style('font-size', 'small');
   }
 
-  appendSpectrum(spectrum: ISpectrum, meta: IMetaData) {
-    // If the current x and y keys don't match the spectra being added, reset them
-    if (!has(spectrum, this.plotOptions.xKey) || !has(spectrum, this.plotOptions.yKey)) {
-      this.plotOptions.xKey = null;
-      this.plotOptions.yKey = null;
+  setSpectra(spectra: {spectrum: ISpectrum; sample: ISample}[]) {
+    this.spectra = spectra;
+    if (this.spectra.length > 0) {
+      const spectrum = this.spectra[0].spectrum;
+      if (isNil(this.plotOptions)) {
+        this.plotOptions = {
+          xKey: Object.keys(spectrum)[0],
+          yKey: Object.keys(spectrum)[1]
+        }
+      } else if (!has(spectrum, this.plotOptions.xKey) || !has(spectrum, this.plotOptions.yKey)) {
+        this.plotOptions.xKey = null;
+        this.plotOptions.yKey = null;
+      }
     }
-    this.spectra.push({spectrum, meta});
-    this.setScales();
-    this.drawAxes();
-    this.drawSpectra();
-  }
-
-  removeSpectrum(meta: IMetaData) {
-    this.spectra = this.spectra.filter((val) => val.meta.id !== meta.id);
-    this.setScales();
-    this.drawAxes();
-    this.drawSpectra();
-  }
-
-  removeSpectra() {
-    this.spectra = [];
     this.setScales();
     this.drawAxes();
     this.drawSpectra();
@@ -104,8 +91,8 @@ class Spectrum {
     for (let i = 0; i < this.spectra.length; ++i) {
       let spectrum = this.spectra[i].spectrum;
       let yOffset = i * this.offset;
-      let xR = extent(spectrum[this.plotOptions.xKey]);
-      let yR = extent(spectrum[this.plotOptions.yKey]);
+      let xR = extent<number>(spectrum[this.plotOptions.xKey]);
+      let yR = extent<number>(spectrum[this.plotOptions.yKey]);
       xRange[0] = Math.min(xRange[0], xR[0]);
       xRange[1] = Math.max(xRange[1], xR[1]);
       yRange[0] = Math.min(yRange[0], yR[0] + yOffset);
@@ -195,12 +182,12 @@ class Spectrum {
         // .transition()
         .attr('stroke-width', boldStrokeWidth);
       let [x, y] = mouse(targets[i]);
-      // x += this.svg.getBoundingClientRect().left;
+      x += this.svg.getBoundingClientRect().left;
       // y += this.svg.getBoundingClientRect().top;
-      const meta = this.spectra[i].meta;
+      const sample = this.spectra[i].sample;
       let innerHtml = '';
-      for (let [key, val] of zip(meta.elements, meta.components)) {
-        innerHtml += `${key}: ${val} <br>`
+      for (let [key, val] of Object.entries(sample.composition)) {
+        innerHtml += `${key.charAt(0).toUpperCase() + key.slice(1)}: ${val.toFixed(2)} <br>`
       }
       this.dataTooltip.html(innerHtml);
       this.dataTooltip

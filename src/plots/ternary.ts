@@ -1,22 +1,16 @@
 import { Selection, BaseType, select } from 'd3-selection';
 import { line, curveLinearClosed } from 'd3-shape';
 import {has} from 'lodash-es';
-import { IDataSet } from '../types';
+import { IAxis, ISample } from '../types';
 import { scalarToColor } from '../utils/colors';
 import { ScaleLinear, scaleLinear } from 'd3-scale';
-
-interface IPlotOptions {
-  scalarIdx: number;
-  componentsIdx: number[];
-  constantComponentIdx: number;
-  spacing: number[];
-  range: number[][];
-}
+import { DataProvider } from '../data-provider';
 
 class TernaryPlot {
 
   name: string;
   svg: HTMLElement;
+  dp: DataProvider;
   upsideDown: boolean;
   vertices: [number, number][];
   rootGroup: Selection<BaseType, {}, null, undefined>;
@@ -25,10 +19,8 @@ class TernaryPlot {
   dataTooltip: Selection<BaseType, {}, null, undefined>;
   scales: ScaleLinear<number, number>[];
   edge: number;
-  data: IDataSet;
   colorMap: [number, number, number][];
   colorMapRange: [number, number] = [0, 1];
-  plotOptions: IPlotOptions;
 
   spacing: number[];
   range: number[][];
@@ -38,9 +30,10 @@ class TernaryPlot {
 
   mouseDown: boolean = false;
 
-  constructor(name: string, svg: HTMLElement, upsideDown: boolean = false) {
+  constructor(svg: HTMLElement, dp: DataProvider, name: string, upsideDown: boolean = false ) {
     this.name = name;
     this.svg = svg;
+    this.dp = dp;
     this.upsideDown = upsideDown;
     this.vertices = [
       [0, 0],
@@ -100,6 +93,10 @@ class TernaryPlot {
       this.vertices[1] = [right, h - (h - height) / 2];
       this.vertices[2] = [left + base / 2, (h - height) / 2];
     }
+    this.render();
+  }
+
+  render() {
     this.drawGrid();
     this.drawData();
   }
@@ -124,7 +121,8 @@ class TernaryPlot {
       .attr('cy', (d) => {return d[1]})
       .attr('r', 3)
 
-    if (!this.data) {
+    const axes: IAxis[] = [this.dp.getAxis(0), this.dp.getAxis(1), this.dp.getAxis(2)];
+    if (!axes[0]) {
       return;
     }
 
@@ -149,7 +147,7 @@ class TernaryPlot {
       .attr('text-anchor', 'middle')
       .attr('font-family', 'sans-serif')
       .attr('font-size', '1.5rem')
-      .text((d, i) => {d; return this.data.elements[this.plotOptions.componentsIdx[i]]})
+      .text((d, i) => {d; return this.dp.getAxisLabel(i)});
 
     this.gridGroup.selectAll('path').remove();
 
@@ -173,20 +171,21 @@ class TernaryPlot {
 
     // Add major grid lines
     for (let i = 0; i < 3; ++ i) {
-      const delta = this.plotOptions.range[i][1] - this.plotOptions.range[i][0];
-      const n = Math.round(delta / this.plotOptions.spacing[i]);
+      const delta = axes[i].range[1] - axes[i].range[0];
+      const spacing = axes[i].spacing;
+      const n = Math.round(delta / spacing);
 
       for (let j = 1; j < n; ++j) {
         let points: [number, number, number][] = [
-          [this.plotOptions.range[0][0], this.plotOptions.range[1][0], this.plotOptions.range[2][0]],
-          [this.plotOptions.range[0][0], this.plotOptions.range[1][0], this.plotOptions.range[2][0]],
+          [axes[0].range[0], axes[1].range[0], axes[2].range[0]],
+          [axes[0].range[0], axes[1].range[0], axes[2].range[0]],
         ];
-        let frac = j * this.plotOptions.spacing[i];
+        let frac = j * axes[i].spacing;
         for (let k = 0; k < 2; ++k) {
-          points[k][i] = this.plotOptions.range[i][1] - frac;
+          points[k][i] = axes[i].range[1] - frac;
           let l = (i + k + 1) % 3;
-          let ratio = (this.plotOptions.range[i][1] - this.plotOptions.range[i][0]) / (this.plotOptions.range[l][1] - this.plotOptions.range[l][0]);
-          points[k][l] = this.plotOptions.range[l][0] + frac / ratio;
+          let ratio = (axes[i].range[1] - axes[i].range[0]) / (axes[l].range[1] - axes[l].range[0]);
+          points[k][l] = axes[l].range[0] + frac / ratio;
         }
         let points2d = points.map(val => this.cartToxy(val));
         this.gridGroup
@@ -201,15 +200,21 @@ class TernaryPlot {
   }
 
   drawData() {
-    if (!this.data) {
+    const axes: IAxis[] = [
+      this.dp.getAxis(0),
+      this.dp.getAxis(1),
+      this.dp.getAxis(2),
+      this.dp.getAxis(3)
+    ];
+    if (!axes[0]) {
       return;
     }
 
-    let points3d = this.data.samples.map((val: any): [number, number, number] => {
+    let points3d = this.dp.samples.map((sample: ISample): [number, number, number] => {
       return [
-        val.components[this.plotOptions.componentsIdx[0]],
-        val.components[this.plotOptions.componentsIdx[1]],
-        val.components[this.plotOptions.componentsIdx[2]],
+        sample.composition[axes[0].element] || 0,
+        sample.composition[axes[1].element] || 0,
+        sample.composition[axes[2].element] || 0
       ]
     })
 
@@ -224,9 +229,12 @@ class TernaryPlot {
       if (! this.colorMap) {
         return 'rgba(0, 0, 0, 0.2';
       }
-      // console.log(d);
       d;
-      let color = scalarToColor(this.data.samples[i].values[this.plotOptions.scalarIdx], this.colorMap, this.colorMapRange);
+      let color = scalarToColor(
+        DataProvider.getSampleScalar(this.dp.samples[i], this.dp.getActiveScalar()),
+        this.colorMap,
+        this.colorMapRange
+      );
       return `rgb(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255})`
     }
 
@@ -237,7 +245,7 @@ class TernaryPlot {
           select(targets[i])
             .attr('stroke-width', 0);
           if (this.onDeselect) {
-            this.onDeselect(this.data.samples[i]);
+            this.onDeselect(this.dp.samples[i]);
           }
         } else {
           selectedHexagons[i] = true;
@@ -245,7 +253,7 @@ class TernaryPlot {
             .attr('stroke', 'red')
             .attr('stroke-width', 2);
           if (this.onSelect) {
-            this.onSelect(this.data.samples[i]);
+            this.onSelect(this.dp.samples[i]);
           }
         }
       }
@@ -253,13 +261,11 @@ class TernaryPlot {
       let [x, y] = d[0];
 
       this.dataTooltip.html(`
-        ${this.data.elements[this.plotOptions.componentsIdx[0]]}: ${points3d[i][0].toFixed(2)}<br>
-        ${this.data.elements[this.plotOptions.componentsIdx[1]]}: ${points3d[i][1].toFixed(2)}<br>
-        ${this.data.elements[this.plotOptions.componentsIdx[2]]}: ${points3d[i][2].toFixed(2)}<br>
-        ${this.plotOptions.constantComponentIdx
-          ? `${this.data.elements[this.plotOptions.constantComponentIdx]}: ${this.data.samples[i].components[this.plotOptions.constantComponentIdx].toFixed(2)}<br>`
-          : ``}
-        ${this.data.scalars[this.plotOptions.scalarIdx]}: ${this.data.samples[i].values[this.plotOptions.scalarIdx].toFixed(2)}<br>
+        ${this.dp.getAxisLabel(0)}: ${points3d[i][0].toFixed(2)}<br>
+        ${this.dp.getAxisLabel(1)}: ${points3d[i][1].toFixed(2)}<br>
+        ${this.dp.getAxisLabel(2)}: ${points3d[i][2].toFixed(2)}<br>
+        ${this.dp.getAxisLabel(3)}: ${axes[3] ? (this.dp.samples[i].composition[axes[3].element] || 0).toFixed(2) : ''}<br>
+        ${this.dp.getActiveScalar()}: ${DataProvider.getSampleScalar(this.dp.samples[i], this.dp.getActiveScalar()).toFixed(2)}<br>
       `)
       this.dataTooltip
         .style('opacity', 0.9)
@@ -280,7 +286,7 @@ class TernaryPlot {
         select(targets[i])
           .attr('stroke-width', 0);
         if (this.onDeselect) {
-          this.onDeselect(this.data.samples[i]);
+          this.onDeselect(this.dp.samples[i]);
         }
       } else {
         selectedHexagons[i] = true;
@@ -288,7 +294,7 @@ class TernaryPlot {
           .attr('stroke', 'red')
           .attr('stroke-width', 2);
         if (this.onSelect) {
-          this.onSelect(this.data.samples[i]);
+          this.onSelect(this.dp.samples[i]);
         }
       }
     }
@@ -327,7 +333,9 @@ class TernaryPlot {
   }
 
   _makeHexagon(cart: [number, number, number]) : [number, number][] {
-    let radius = 1 / Math.sqrt(3) * this.edge * this.plotOptions.spacing[0] / (this.plotOptions.range[0][1] - this.plotOptions.range[0][0]);
+    const axis = this.dp.getAxis(0);
+    const delta = axis.range[1] - axis.range[0];
+    let radius = 1 / Math.sqrt(3) * this.edge * axis.spacing / delta;
     radius *= 0.99;
     let center = this.cartToxy(cart);
     let points: [number, number][] = [];
@@ -341,59 +349,13 @@ class TernaryPlot {
     return points;
   }
 
-  setData(data: IDataSet, components: string[] = null, constantComponent: string = null) {
-    this.data = data;
-
+  dataUpdated() {
     this.scales = [];
-    let spacing: number[];
-    if (!data.spacing) {
-      spacing = [0.1, 0.1, 0.1];
-    } else {
-      if (Array.isArray(data.spacing)) {
-        spacing = data.spacing;
-      } else {
-        spacing = [data.spacing, data.spacing, data.spacing];
-      }
-    }
-
-    let range: number[][];
-    if (!data.range) {
-      range = [[0, 1], [0, 1], [0, 1]];
-    } else {
-      if (Array.isArray(data.range) && (data.range as any[]).every(el => Array.isArray(el))) {
-        range = data.range as number[][];
-      // } else if (Array.isArray(data.range)) {
-      //   let r = data.range as number[];
-      //   range = [r, r, r];
-      } else {
-        range = [[0, 1], [0, 1], [0, 1]];
-      }
-    }
-
+    const axes: IAxis[] = [this.dp.getAxis(0), this.dp.getAxis(1), this.dp.getAxis(2)];
     for (let i = 0; i < 3; ++i) {
-      this.scales.push(scaleLinear().domain(range[i]).range([0, 1]));
+      const range = axes[i] ? axes[i].range : [0, 1];
+      this.scales.push(scaleLinear().domain(range).range([0, 1]));
     }
-
-    this.plotOptions = {
-      scalarIdx: 0,
-      componentsIdx: components ? components.map(c => data.elements.findIndex(el => el === c)) : [0, 1, 2],
-      constantComponentIdx: constantComponent ? data.elements.findIndex((val) => val === constantComponent) : null,
-      spacing: spacing,
-      range: range
-    }
-
-    this.drawGrid();
-    this.drawData();
-  }
-
-  selectScalar(scalar: string) {
-    this.plotOptions = {
-      ...this.plotOptions,
-      scalarIdx: scalar ? this.data.scalars.findIndex((val) => val === scalar) : 0
-    }
-
-    // this.drawGrid();
-    this.drawData();
   }
 
   cartToxy(cart: [number, number, number]) : [number, number] {

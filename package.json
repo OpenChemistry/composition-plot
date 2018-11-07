@@ -8,7 +8,8 @@
     "esm/"
   ],
   "scripts": {
-    "build": "tsc "
+    "build": "tsc ",
+    "watch": "tsc -w"
   },
   "dependencies": {
     "d3-array": "^1.2.4",
@@ -32,4 +33,3 @@
   "author": "Alessandro Genova, Kitware Inc.",
   "license": "BSD-3-Clause"
 }
-

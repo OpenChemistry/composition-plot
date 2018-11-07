@@ -3,6 +3,7 @@ export function scalarToColor(
   colorMap: [number, number, number][],
   colorMapRange: [number, number]
 ) {
+  // console.log("SCALAR TO COLOR", scalar, colorMap, colorMapRange);
   let indexFloat = (colorMap.length - 1) * (scalar - colorMapRange[0]) / (colorMapRange[1] - colorMapRange[0]);
   if (indexFloat <= 0) {
     return colorMap[0];
