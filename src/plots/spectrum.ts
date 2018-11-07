@@ -9,7 +9,6 @@ import { line } from 'd3-shape';
 import { getLineColor } from '../utils/colors';
 
 import { has, zip, isNil } from 'lodash-es';
-import { DataProvider } from '../data-provider';
 
 interface IPlotOptions {
   xKey: string;
@@ -20,7 +19,6 @@ class Spectrum {
 
   name: string;
   svg: HTMLElement;
-  dp: DataProvider;
   xScale: ScaleLinear<number, number>;
   yScale: ScaleLinear<number, number>;
   spectra: {spectrum: ISpectrum; sample: ISample}[] = [];
@@ -30,9 +28,8 @@ class Spectrum {
   offset: number = 0.1;
   plotOptions: IPlotOptions;
 
-  constructor(svg: HTMLElement, dp: DataProvider) {
+  constructor(svg: HTMLElement) {
     this.svg = svg;
-    this.dp = dp;
     this.dataGroup = select(this.svg)
       .append('g')
       .classed('data', true);
@@ -185,12 +182,12 @@ class Spectrum {
         // .transition()
         .attr('stroke-width', boldStrokeWidth);
       let [x, y] = mouse(targets[i]);
-      // x += this.svg.getBoundingClientRect().left;
+      x += this.svg.getBoundingClientRect().left;
       // y += this.svg.getBoundingClientRect().top;
       const sample = this.spectra[i].sample;
       let innerHtml = '';
       for (let [key, val] of Object.entries(sample.composition)) {
-        innerHtml += `${key}: ${val} <br>`
+        innerHtml += `${key.charAt(0).toUpperCase() + key.slice(1)}: ${val.toFixed(2)} <br>`
       }
       this.dataTooltip.html(innerHtml);
       this.dataTooltip
