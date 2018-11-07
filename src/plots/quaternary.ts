@@ -8,7 +8,7 @@ class QuaternaryPlot {
   dp: DataProvider;
   selectedScalar: string;
   scalarIdx: number;
-  edgeUnit: number = 350;
+  edgeUnit: number = 250;
   colorMap: [number, number, number][];
   colorMapRange: [number, number];
   shells: TernaryPlot[][] = [];

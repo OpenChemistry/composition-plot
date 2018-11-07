@@ -21,7 +21,7 @@ export class DataProvider {
 
   setData(samples: ISample[], discardAxes: boolean = true) : void {
     this.samples = [];
-    this.axes = null;
+    this.axes = {};
     this.scalars = new Set();
     this.axisToIdx = {};
     this.idxToAxis = {};
@@ -105,11 +105,10 @@ export class DataProvider {
   setAxes(axes: {[element: string]: IAxis}) {
     // Ensure the new axes match the elements in the dataset
     for (let key of Object.keys(axes)) {
-      if (key in this.axes) {
-        this.axes[key] = axes[key];
-      } else {
-        console.warn(`Cannot axis ${key} is missing in the dataset`);
+      if (!(key in this.axes)) {
+        console.warn(`Setting axis ${key}, but no samples in the dataset span this dimension`);
       }
+      this.axes[key] = axes[key];
     }
   }
 
