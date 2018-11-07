@@ -48,7 +48,7 @@ class QuaternaryPlot {
 
   dataUpdated() {
     this.setShellsData();
-    this.setColorMap(this.colorMap, null);
+    this.render();
   }
 
   setColorMap(map: [number, number, number][], range: [number, number] = null) {
