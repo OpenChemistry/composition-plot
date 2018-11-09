@@ -265,7 +265,7 @@ class TernaryPlot {
         ${this.dp.getAxisLabel(1)}: ${points3d[i][1].toFixed(2)}<br>
         ${this.dp.getAxisLabel(2)}: ${points3d[i][2].toFixed(2)}<br>
         ${this.dp.getAxisLabel(3)}: ${axes[3] ? (this.dp.samples[i].composition[axes[3].element] || 0).toFixed(2) : ''}<br>
-        ${this.dp.getActiveScalar()}: ${DataProvider.getSampleScalar(this.dp.samples[i], this.dp.getActiveScalar()).toFixed(2)}<br>
+        ${this.dp.getActiveScalar().replace('\\u002', '.')}: ${DataProvider.getSampleScalar(this.dp.samples[i], this.dp.getActiveScalar()).toFixed(2)}<br>
       `)
       this.dataTooltip
         .style('opacity', 0.9)
