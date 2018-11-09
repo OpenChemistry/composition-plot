@@ -1,4 +1,4 @@
-import { ISample, IAxis } from '../types';
+import { ISample, IAxis, ISpectrum } from '../types';
 
 const eps = 1e-6;
 
@@ -193,8 +193,125 @@ export class DataProvider {
   }
 }
 
-export class QuaternaryDataProvider extends DataProvider {
+interface ISampleSpectrum {
+  sample: ISample;
+  spectrum: ISpectrum;
+}
+export class HeatMapDataProvider {
+  data: ISampleSpectrum[] = [];
+  axes: [string, string];
+  scalars: Set<string> = new Set();
+  activeScalars: [string, string];
+  numY: number = 10;
+  separateSlope: boolean = false;
+  indexMaps: number[][][];
+  X: string[];
+  Y: string[];
+  Z: number[][];
+
   constructor() {
-    super(4);
+  }
+
+  setData(data: ISampleSpectrum[] = []) {
+    this.data = data;
+    this.scalars = new Set();
+    for (let d of data) {
+      for (let key of Object.keys(d.spectrum)) {
+        this.scalars.add(key);
+      }
+    }
+  }
+
+  setActiveScalars(keys: [string, string]): void {
+    this.activeScalars = [null, null];
+    for (let i = 0; i < keys.length; ++i) {
+      const key = keys[i];
+      if (this.scalars.has(key)) {
+        this.activeScalars[i] = key;
+      } else {
+        console.warn(`Unable to set ${key} as active scalar`);
+      }
+    }
+  }
+
+  getActiveScalars() : [string, string] {
+    return this.activeScalars;
+  }
+
+  setNumY(n: number = 10) {
+    this.numY = n;
+  }
+
+  setSeparateSlope(flag: boolean) {
+    this.separateSlope = flag;
+  }
+
+  computeMaps() {
+    // Values in the Y axis can be repeated
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (let d of this.data) {
+      minY = Math.min(minY, ...d.spectrum[this.getActiveScalars()[0]]);
+      maxY = Math.max(maxY, ...d.spectrum[this.getActiveScalars()[0]]);
+    }
+    const slopeFactor = this.separateSlope ? 2 : 1;
+    const spacing = (maxY - minY) / this.numY;
+    this.Y = [];
+    for (let i = 0; i < this.numY; ++i) {
+      if (this.separateSlope) {
+        this.Y.push(`${(minY + i * spacing).toFixed(2)} (+)`);
+      } else {
+        this.Y.push(`${(minY + i * spacing).toFixed(2)}`);
+      }
+    }
+    if (this.separateSlope) {
+      for (let i = 0; i < this.numY; ++i) {
+        this.Y.push(`${(maxY - (i + 1) * spacing).toFixed(2)} (-)`);
+      }
+    }
+
+    this.indexMaps = [];
+    for (let i = 0; i < this.data.length; ++i) {
+      const yData = this.data[i].spectrum[this.getActiveScalars()[0]];
+      const map = [];
+      for (let j = 0; j < this.numY * slopeFactor; ++j) {
+        map.push([]);
+      }
+      for (let j = 0; j < yData.length; ++j) {
+        let idx = Math.min(Math.round( (yData[j] - minY) / spacing ), this.numY -1);
+        if (this.separateSlope && j > 0) {
+          const slope = yData[j] >= yData[j-1] ? 1 : -1;
+          if (slope === -1) {
+            idx = 2 * this.numY - idx - 1;
+          }
+        }
+        map[idx].push(j);
+      }
+      this.indexMaps.push(map);
+    }
+
+    // Take the median of the Z values occurring at a specific Y value
+    this.Z = [];
+    for (let i = 0; i < this.indexMaps.length; ++i) {
+      const map = this.indexMaps[i];
+      const vals = [];
+      for (let j = 0; j < map.length; ++j) {
+        const y = map[j];
+        let v = [];
+        for (let k = 0; k < y.length; ++k) {
+          const idx = y[k];
+          v.push(this.data[i].spectrum[this.getActiveScalars()[1]][idx]);
+        }
+        v = v.sort((a, b) => a < b ? -1 : 1);
+        vals.push(v[Math.floor(v.length / 2)]);
+      }
+      this.Z.push(vals);
+    }
+
+    //
+    this.X = [];
+    for (let d of this.data) {
+      this.X.push(Object.entries(d.sample.composition).map(([key, val]) => `${key.charAt(0).toUpperCase()}${key.slice(1)}: ${val.toFixed(1)}`).join(', '));
+    }
   }
 }

@@ -37,6 +37,22 @@ export function* getLineColor() {
   }
 }
 
+export function rgbToHex(r: number, g: number, b: number) : string {
+  const red = numToHex(Math.floor(r * 255));
+  const green = numToHex(Math.floor(g * 255));
+  const blue = numToHex(Math.floor(b * 255));
+  return red + green + blue;
+};
+
+function numToHex(n: number) : string {
+  let hex = Number(n).toString(16);
+  if (hex.length < 2) {
+       hex = "0" + hex;
+  }
+  return hex;
+};
+
+
 export const viridis : [number, number, number][] = [
   [0.267004, 0.004874, 0.329415],
   [0.282327, 0.094955, 0.417331],
