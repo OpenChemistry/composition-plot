@@ -67,8 +67,18 @@ class TernaryPlot {
       .style('font-family', 'sans-serif')
       .style('font-size', 'small');
 
-    this.svg.addEventListener('mousedown', () => {this.mouseDown = true});
-    this.svg.addEventListener('mouseup', () => {this.mouseDown = false});
+    this.svg.addEventListener(
+      'mousedown', () => {
+        this.mouseDown = true;
+
+        const mouseUpListener = () => {
+          window.removeEventListener('mouseup', mouseUpListener);
+          this.mouseDown = false;
+        };
+
+        window.addEventListener('mouseup', mouseUpListener);
+      }
+    );
     // dragging randomly gets in the way
     this.svg.addEventListener('dragstart', (e) => {e.preventDefault()});
   }
@@ -269,8 +279,8 @@ class TernaryPlot {
       `)
       this.dataTooltip
         .style('opacity', 0.9)
-        .style('left', `${x}px`)
-        .style('top', `${y}px`)
+        .style('left', `${x+10}px`)
+        .style('top', `${y-10}px`)
         .style('transform', `translateY(-100%)`);
     }
 
