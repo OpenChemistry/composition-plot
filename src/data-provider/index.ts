@@ -191,6 +191,10 @@ export class DataProvider {
     }
     return samples;
   }
+
+  static isSelected(sample: ISample, selectedKeys: Set<string>) : boolean {
+    return selectedKeys.has(sample._id);
+  }
 }
 
 interface ISampleSpectrum {
