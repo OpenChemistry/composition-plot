@@ -21,3 +21,9 @@ export interface IAxis {
 export interface ISpectrum {
   [name: string]: number[]
 }
+
+export interface ISegment {
+  start: number;
+  stop: number;
+  selected: boolean;
+}
