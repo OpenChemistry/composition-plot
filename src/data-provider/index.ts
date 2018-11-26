@@ -1,4 +1,5 @@
-import { ISample, IAxis, ISpectrum } from '../types';
+import { ISample, IAxis, ISpectrum, ISegment } from '../types';
+import { has } from 'lodash-es';
 
 const eps = 1e-6;
 
@@ -191,6 +192,10 @@ export class DataProvider {
     }
     return samples;
   }
+
+  static isSelected(sample: ISample, selectedKeys: Set<string>) : boolean {
+    return selectedKeys.has(sample._id);
+  }
 }
 
 interface ISampleSpectrum {
@@ -205,11 +210,15 @@ export class HeatMapDataProvider {
   numY: number = 10;
   separateSlope: boolean = false;
   indexMaps: number[][][];
+  segments: ISegment[] = [];
+  selection: string = '';
+  reduceFn: (numbers: number[]) => number;
   X: string[];
   Y: string[];
   Z: number[][];
 
   constructor() {
+    this.setReduceFn();
   }
 
   setData(data: ISampleSpectrum[] = []) {
@@ -251,11 +260,17 @@ export class HeatMapDataProvider {
     let minY = Infinity;
     let maxY = -Infinity;
     for (let d of this.data) {
+      if (!has(d.spectrum, this.getActiveScalars()[0])) {
+        continue;
+      }
       minY = Math.min(minY, ...d.spectrum[this.getActiveScalars()[0]]);
       maxY = Math.max(maxY, ...d.spectrum[this.getActiveScalars()[0]]);
     }
     const slopeFactor = this.separateSlope ? 2 : 1;
     const spacing = (maxY - minY) / this.numY;
+    if (this.separateSlope) {
+      this.findSegments();
+    }
     this.Y = [];
     for (let i = 0; i < this.numY; ++i) {
       if (this.separateSlope) {
@@ -272,20 +287,27 @@ export class HeatMapDataProvider {
 
     this.indexMaps = [];
     for (let i = 0; i < this.data.length; ++i) {
+      if (!has(this.data[i].spectrum, this.getActiveScalars()[0])) {
+        this.indexMaps.push([]);
+        continue;
+      }
       const yData = this.data[i].spectrum[this.getActiveScalars()[0]];
       const map = [];
       for (let j = 0; j < this.numY * slopeFactor; ++j) {
         map.push([]);
       }
       for (let j = 0; j < yData.length; ++j) {
-        let idx = Math.min(Math.round( (yData[j] - minY) / spacing ), this.numY -1);
-        if (this.separateSlope && j > 0) {
-          const slope = yData[j] >= yData[j-1] ? 1 : -1;
-          if (slope === -1) {
-            idx = 2 * this.numY - idx - 1;
+        // Only include the Y values in the selected segments
+        if (this.inSelectedSegment(j)) {
+          let idx = Math.min(Math.round( (yData[j] - minY) / spacing ), this.numY -1);
+          if (this.separateSlope && j > 0) {
+            const slope = yData[j] >= yData[j-1] ? 1 : -1;
+            if (slope === -1) {
+              idx = 2 * this.numY - idx - 1;
+            }
           }
+          map[idx].push(j);
         }
-        map[idx].push(j);
       }
       this.indexMaps.push(map);
     }
@@ -302,8 +324,7 @@ export class HeatMapDataProvider {
           const idx = y[k];
           v.push(this.data[i].spectrum[this.getActiveScalars()[1]][idx]);
         }
-        v = v.sort((a, b) => a < b ? -1 : 1);
-        vals.push(v[Math.floor(v.length / 2)]);
+        vals.push(this.reduceFn(v));
       }
       this.Z.push(vals);
     }
@@ -313,5 +334,104 @@ export class HeatMapDataProvider {
     for (let d of this.data) {
       this.X.push(Object.entries(d.sample.composition).map(([key, val]) => `${key.charAt(0).toUpperCase()}${key.slice(1)}: ${val.toFixed(1)}`).join(', '));
     }
+  }
+
+  getSegments() {
+    return this.segments;
+  }
+
+  selectSegments(selection: string) {
+    this.selection = selection;
+  }
+
+  setReduceFn(name: 'min' | 'max' | 'mean' | 'median' = 'median') {
+    const reduceFunctions = {
+      'min': function(values: number[]) : number {
+        return Math.min(...values);
+      },
+      'max': function(values: number[]) : number {
+        return Math.max(...values);
+      },
+      'mean': function(values: number[]) : number {
+        let sum = 0;
+        for (let v of values) {
+          sum += v;
+        }
+        return sum / values.length;
+      },
+      'median': function(values: number[]) : number {
+        values = values.sort((a, b) => a < b ? -1 : 1);
+        return values[Math.floor(values.length / 2)];
+      },
+    }
+    this.reduceFn = reduceFunctions[name];
+  }
+
+  private findSegments() {
+    this.segments = [];
+    if (this.data.length == 0) {
+      return;
+    }
+    if (!has(this.data[0].spectrum, this.getActiveScalars()[0])) {
+      return;
+    }
+    const Y = this.data[0].spectrum[this.getActiveScalars()[0]];
+    let currSlope: boolean = null;
+
+    for (let i = 1; i < Y.length; ++i) {
+      const slope = Y[i] - Y[i - 1] >= 0;
+      if (slope !== currSlope) {
+        this.segments.push({start: i, stop: i, selected: false});
+      } else {
+        let currSegment = this.segments.pop();
+        currSegment = {...currSegment, stop: i};
+        this.segments.push(currSegment);
+      }
+      currSlope = slope;
+    }
+    this.setActiveSegments(this.selection);
+    console.log(this.segments);
+  }
+
+  private setActiveSegments(selection: string) {
+    const s: string[] = selection.split(',');
+
+    const init = selection.trim() == '';
+    for (let i = 0; i < this.segments.length; ++i) {
+      this.segments[i].selected = init;
+    }
+
+    for (let seg of s) {
+      const range = seg.split('-');
+      let start = parseInt(range[0]);
+      let stop = start;
+      if (range.length > 1) {
+        stop = parseInt(range[1]);
+      }
+      if (!isFinite(start) || !isFinite(stop)) {
+        continue;
+      }
+      if (stop < start) {
+        continue;
+      }
+      for (let idx = start; idx <= stop; ++idx) {
+        if (idx < this.segments.length) {
+          this.segments[idx].selected = true;
+        }
+      }
+    }
+  }
+
+  private inSelectedSegment(idx: number) {
+    if (!this.separateSlope || this.segments.length === 0) {
+      return true;
+    }
+    // Will write the function in ln(n) complexity one day...
+    for (let segment of this.segments) {
+      if (idx >= segment.start && idx < segment.stop && segment.selected) {
+        return true;
+      }
+    }
+    return false;
   }
 }

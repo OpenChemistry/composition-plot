@@ -12,6 +12,7 @@ class QuaternaryPlot {
   colorMap: [number, number, number][];
   colorMapRange: [number, number];
   shells: TernaryPlot[][] = [];
+  selectedSamples: Set<string>;
 
   constructor(svg: HTMLElement, dp: DataProvider) {
     this.svg = svg;
@@ -83,6 +84,15 @@ class QuaternaryPlot {
       plot.onDeselect = onDeselect;
     }
     this.broadCast(fn);
+  }
+
+  setSelectedSamples(selectedSamples: Set<string>) {
+    this.selectedSamples = selectedSamples;
+    const fn = (plot: TernaryPlot) => {
+      plot.setSelectedSamples(this.selectedSamples);
+    }
+    this.broadCast(fn);
+    this.render();
   }
 
   render() {

@@ -90,6 +90,9 @@ class Spectrum {
     let yRange = [Infinity, -Infinity];
     for (let i = 0; i < this.spectra.length; ++i) {
       let spectrum = this.spectra[i].spectrum;
+      if (!has(spectrum, this.plotOptions.xKey) || !has(spectrum, this.plotOptions.yKey)) {
+        continue;
+      }
       let yOffset = i * this.offset;
       let xR = extent<number>(spectrum[this.plotOptions.xKey]);
       let yR = extent<number>(spectrum[this.plotOptions.yKey]);
@@ -167,8 +170,8 @@ class Spectrum {
       .data(this.spectra);
 
     let lineFn = line()
-      .x((d: any) => this.xScale(d[0]))
-      .y((d: any) => this.yScale(d[1]));
+      .x((d: any) => d ? this.xScale(d[0]) : null)
+      .y((d: any) => d ? this.yScale(d[1]) : null);
 
     let colorGen = getLineColor();
 
@@ -211,6 +214,9 @@ class Spectrum {
     // Update
     plots
       .datum((d, i) => {
+        if (!has(d.spectrum, this.plotOptions.xKey) || !has(d.spectrum, this.plotOptions.yKey)) {
+          return [null, null];
+        }
         return zip(d.spectrum[this.plotOptions.xKey], d.spectrum[this.plotOptions.yKey].map(val => val + i * this.offset));
       })
       .attr('d', lineFn)
@@ -227,6 +233,9 @@ class Spectrum {
     plots.enter()
       .append('path')
       .datum((d, i) => {
+        if (!has(d.spectrum, this.plotOptions.xKey) || !has(d.spectrum, this.plotOptions.yKey)) {
+          return [null, null];
+        }
         return zip(d.spectrum[this.plotOptions.xKey], d.spectrum[this.plotOptions.yKey].map(val => val + i * this.offset));
       })
       .attr('d', lineFn)

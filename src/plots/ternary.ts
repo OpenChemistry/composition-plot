@@ -1,6 +1,6 @@
 import { Selection, BaseType, select } from 'd3-selection';
 import { line, curveLinearClosed } from 'd3-shape';
-import {has} from 'lodash-es';
+
 import { IAxis, ISample } from '../types';
 import { scalarToColor } from '../utils/colors';
 import { ScaleLinear, scaleLinear } from 'd3-scale';
@@ -21,6 +21,7 @@ class TernaryPlot {
   edge: number;
   colorMap: [number, number, number][];
   colorMapRange: [number, number] = [0, 1];
+  selectedSamples: Set<string> = new Set();
 
   spacing: number[];
   range: number[][];
@@ -228,8 +229,6 @@ class TernaryPlot {
       ]
     })
 
-    const selectedHexagons = {};
-
     let hexFn = line()
       .x((d) => d[0])
       .y((d) => d[1])
@@ -248,20 +247,13 @@ class TernaryPlot {
       return `rgb(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255})`
     }
 
-    const onMouseOver = (d, i, targets) => {
+    const onMouseOver = (d, i) => {
       if (this.mouseDown) {
-        if (has(selectedHexagons, i)) {
-          delete selectedHexagons[i];
-          select(targets[i])
-            .attr('stroke-width', 0);
+        if (DataProvider.isSelected(this.dp.samples[i], this.selectedSamples)) {
           if (this.onDeselect) {
             this.onDeselect(this.dp.samples[i]);
           }
         } else {
-          selectedHexagons[i] = true;
-          select(targets[i])
-            .attr('stroke', 'red')
-            .attr('stroke-width', 2);
           if (this.onSelect) {
             this.onSelect(this.dp.samples[i]);
           }
@@ -289,20 +281,13 @@ class TernaryPlot {
         .style('opacity', 0);
     }
 
-    const onMouseDown = (d, i, targets) => {
+    const onMouseDown = (d, i) => {
       d;
-      if (has(selectedHexagons, i)) {
-        delete selectedHexagons[i];
-        select(targets[i])
-          .attr('stroke-width', 0);
+      if (DataProvider.isSelected(this.dp.samples[i], this.selectedSamples)) {
         if (this.onDeselect) {
           this.onDeselect(this.dp.samples[i]);
         }
       } else {
-        selectedHexagons[i] = true;
-        select(targets[i])
-          .attr('stroke', 'red')
-          .attr('stroke-width', 2);
         if (this.onSelect) {
           this.onSelect(this.dp.samples[i]);
         }
@@ -320,6 +305,11 @@ class TernaryPlot {
         .datum((d) => this._makeHexagon(d))
         .attr('d', hexFn)
         .attr('fill', fillFn)
+        .attr('stroke', 'red')
+        .attr('stroke-width', (d, i) => {
+          d;
+          return DataProvider.isSelected(this.dp.samples[i], this.selectedSamples) ? 2 : 0
+        })
         .on('mouseover', onMouseOver)
         .on('mouseout', onMouseOut)
         .on('mousedown', onMouseDown);
@@ -329,6 +319,10 @@ class TernaryPlot {
       .datum((d) => this._makeHexagon(d))
       .attr('d', hexFn)
       .attr('fill', fillFn)
+      .attr('stroke-width', (d, i) => {
+        d;
+        return DataProvider.isSelected(this.dp.samples[i], this.selectedSamples) ? 2 : 0
+      })
       .on('mouseover', onMouseOver)
       .on('mouseout', onMouseOut)
       .on('mousedown', onMouseDown);
@@ -340,6 +334,10 @@ class TernaryPlot {
     this.colorMap = map;
     this.colorMapRange = range;
     this.drawData();
+  }
+
+  setSelectedSamples(selectedSamples: Set<string>) {
+    this.selectedSamples = selectedSamples;
   }
 
   _makeHexagon(cart: [number, number, number]) : [number, number][] {
