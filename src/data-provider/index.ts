@@ -1,4 +1,5 @@
 import { ISample, IAxis, ISpectrum, ISegment } from '../types';
+import { has } from 'lodash-es';
 
 const eps = 1e-6;
 
@@ -259,6 +260,9 @@ export class HeatMapDataProvider {
     let minY = Infinity;
     let maxY = -Infinity;
     for (let d of this.data) {
+      if (!has(d.spectrum, this.getActiveScalars()[0])) {
+        continue;
+      }
       minY = Math.min(minY, ...d.spectrum[this.getActiveScalars()[0]]);
       maxY = Math.max(maxY, ...d.spectrum[this.getActiveScalars()[0]]);
     }
@@ -283,6 +287,10 @@ export class HeatMapDataProvider {
 
     this.indexMaps = [];
     for (let i = 0; i < this.data.length; ++i) {
+      if (!has(this.data[i].spectrum, this.getActiveScalars()[0])) {
+        this.indexMaps.push([]);
+        continue;
+      }
       const yData = this.data[i].spectrum[this.getActiveScalars()[0]];
       const map = [];
       for (let j = 0; j < this.numY * slopeFactor; ++j) {
@@ -362,6 +370,9 @@ export class HeatMapDataProvider {
   private findSegments() {
     this.segments = [];
     if (this.data.length == 0) {
+      return;
+    }
+    if (!has(this.data[0].spectrum, this.getActiveScalars()[0])) {
       return;
     }
     const Y = this.data[0].spectrum[this.getActiveScalars()[0]];
