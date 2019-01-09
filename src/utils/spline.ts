@@ -1,10 +1,10 @@
-export interface SplineModel {
+export interface ISplineModel {
   knots: number[];
   coeffs: number[];
   k: number;
 }
 
-export function splineEval(x: number[], spl: SplineModel) : number[] {
+export function splineEval(x: number[], spl: ISplineModel) : number[] {
   /*
     TypeScript port of FITPACK's `splev` routine:
     subroutine splev(t,n,c,k,x,y,m,e,ier)

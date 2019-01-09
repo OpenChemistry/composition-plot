@@ -3,12 +3,13 @@ import { extent } from 'd3-array';
 import { axisBottom, axisLeft } from 'd3-axis';
 // import { line, curveLinearClosed } from 'd3-shape';
 
-import { ISpectrum, ISample } from '../types';
+import { ISample } from '../types';
 import { ScaleLinear, scaleLinear } from 'd3-scale';
 import { line } from 'd3-shape';
 import { getLineColor } from '../utils/colors';
 
-import { has, zip, isNil } from 'lodash-es';
+import { zip, isNil } from 'lodash-es';
+import { IDataProvider as ISpectrumProvider } from '../data-provider/spectrum';
 
 interface IPlotOptions {
   xKey: string;
@@ -21,7 +22,7 @@ class Spectrum {
   svg: HTMLElement;
   xScale: ScaleLinear<number, number>;
   yScale: ScaleLinear<number, number>;
-  spectra: {spectrum: ISpectrum; sample: ISample}[] = [];
+  spectra: {spectrum: ISpectrumProvider; sample: ISample}[] = [];
   dataTooltip: Selection<BaseType, {}, null, undefined>;
   dataGroup: Selection<BaseType, {}, null, undefined>;
   axesGroup: Selection<BaseType, {}, null, undefined>;
@@ -52,16 +53,16 @@ class Spectrum {
       .style('font-size', 'small');
   }
 
-  setSpectra(spectra: {spectrum: ISpectrum; sample: ISample}[]) {
+  setSpectra(spectra: {spectrum: ISpectrumProvider; sample: ISample}[]) {
     this.spectra = spectra;
     if (this.spectra.length > 0) {
       const spectrum = this.spectra[0].spectrum;
       if (isNil(this.plotOptions)) {
         this.plotOptions = {
-          xKey: Object.keys(spectrum)[0],
-          yKey: Object.keys(spectrum)[1]
+          xKey: spectrum.getKeys()[0],
+          yKey: spectrum.getKeys()[1]
         }
-      } else if (!has(spectrum, this.plotOptions.xKey) || !has(spectrum, this.plotOptions.yKey)) {
+      } else if (!spectrum.hasKey(this.plotOptions.xKey) || !spectrum.hasKey(this.plotOptions.yKey)) {
         this.plotOptions.xKey = null;
         this.plotOptions.yKey = null;
       }
@@ -90,12 +91,12 @@ class Spectrum {
     let yRange = [Infinity, -Infinity];
     for (let i = 0; i < this.spectra.length; ++i) {
       let spectrum = this.spectra[i].spectrum;
-      if (!has(spectrum, this.plotOptions.xKey) || !has(spectrum, this.plotOptions.yKey)) {
+      if (!spectrum.hasKey(this.plotOptions.xKey) || !spectrum.hasKey(this.plotOptions.yKey)) {
         continue;
       }
       let yOffset = i * this.offset;
-      let xR = extent<number>(spectrum[this.plotOptions.xKey]);
-      let yR = extent<number>(spectrum[this.plotOptions.yKey]);
+      let xR = extent<number>(spectrum.getArray(this.plotOptions.xKey));
+      let yR = extent<number>(spectrum.getArray(this.plotOptions.yKey));
       xRange[0] = Math.min(xRange[0], xR[0]);
       xRange[1] = Math.max(xRange[1], xR[1]);
       yRange[0] = Math.min(yRange[0], yR[0] + yOffset);
@@ -214,10 +215,10 @@ class Spectrum {
     // Update
     plots
       .datum((d, i) => {
-        if (!has(d.spectrum, this.plotOptions.xKey) || !has(d.spectrum, this.plotOptions.yKey)) {
+        if (!d.spectrum.hasKey(this.plotOptions.xKey) || !d.spectrum.hasKey(this.plotOptions.yKey)) {
           return [null, null];
         }
-        return zip(d.spectrum[this.plotOptions.xKey], d.spectrum[this.plotOptions.yKey].map(val => val + i * this.offset));
+        return zip(d.spectrum.getArray(this.plotOptions.xKey), d.spectrum.getArray(this.plotOptions.yKey).map(val => val + i * this.offset));
       })
       .attr('d', lineFn)
       .attr('fill', 'none')
@@ -233,10 +234,10 @@ class Spectrum {
     plots.enter()
       .append('path')
       .datum((d, i) => {
-        if (!has(d.spectrum, this.plotOptions.xKey) || !has(d.spectrum, this.plotOptions.yKey)) {
+        if (!d.spectrum.hasKey(this.plotOptions.xKey) || !d.spectrum.hasKey(this.plotOptions.yKey)) {
           return [null, null];
         }
-        return zip(d.spectrum[this.plotOptions.xKey], d.spectrum[this.plotOptions.yKey].map(val => val + i * this.offset));
+        return zip(d.spectrum.getArray(this.plotOptions.xKey), d.spectrum.getArray(this.plotOptions.yKey).map(val => val + i * this.offset));
       })
       .attr('d', lineFn)
       .attr('fill', 'none')

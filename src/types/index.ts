@@ -19,7 +19,7 @@ export interface IAxis {
 }
 
 export interface ISpectrum {
-  [name: string]: number[]
+  [name: string]: number[];
 }
 
 export interface ISegment {

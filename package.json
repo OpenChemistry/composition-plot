@@ -13,6 +13,7 @@
     "prepare": "npm run build"
   },
   "dependencies": {
+    "@openchemistry/utils": "^0.6.4",
     "d3-array": "^1.2.4",
     "d3-axis": "^1.0.12",
     "d3-scale": "^2.1.0",
@@ -23,6 +24,7 @@
     "plotly.js": "^1.42.5"
   },
   "devDependencies": {
+    "@openchemistry/types": "^0.8.4",
     "@types/d3-array": "^1.2.1",
     "@types/d3-axis": "^1.0.10",
     "@types/d3-scale": "^2.0.1",
