@@ -4,4 +4,5 @@ export { Spectrum } from './plots/spectrum';
 export { HeatMap } from './plots/heatmap';
 export { DataProvider, HeatMapDataProvider } from './data-provider';
 import * as colors from './utils/colors';
-export {colors};
+import * as spline from './utils/spline';
+export { colors, spline };
