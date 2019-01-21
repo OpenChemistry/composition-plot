@@ -147,13 +147,24 @@ class Spectrum {
     let yLow = this.yScale(this.yScale.domain()[0]);
     let yMid = this.yScale(this.yScale.domain()[0] + (this.yScale.domain()[1] - this.yScale.domain()[0]) /2 );
 
+    let xLabel: string;
+    let yLabel: string;
+    if (this.spectra.length > 0) {
+      const dp = this.spectra[0].spectrum;
+      xLabel = dp.getLabel(this.plotOptions.xKey);
+      yLabel = dp.getLabel(this.plotOptions.yKey);
+    } else {
+      xLabel = this.plotOptions.xKey;
+      yLabel = this.plotOptions.yKey;
+    }
+
     this.axesGroup
       .append('g')
       .attr("transform", `translate(${xMid}, ${yLow + 40})`)
       .append("text")
         .attr('text-anchor', 'middle')
         .attr('font-family', 'sans-serif')
-        .text(this.plotOptions.xKey);
+        .text(xLabel);
 
     this.axesGroup
       .append('g')
@@ -162,7 +173,7 @@ class Spectrum {
         .attr('text-anchor', 'middle')
         .attr('transform', 'rotate(-90)')
         .attr('font-family', 'sans-serif')
-        .text(this.plotOptions.yKey);
+        .text(yLabel);
 
   }
 
@@ -189,6 +200,11 @@ class Spectrum {
       x += this.svg.getBoundingClientRect().left;
       // y += this.svg.getBoundingClientRect().top;
       const sample = this.spectra[i].sample;
+
+      if (isNil(sample)) {
+        return;
+      }
+
       let innerHtml = '';
       for (let [key, val] of Object.entries(sample.composition)) {
         innerHtml += `${key.charAt(0).toUpperCase() + key.slice(1)}: ${val.toFixed(2)} <br>`

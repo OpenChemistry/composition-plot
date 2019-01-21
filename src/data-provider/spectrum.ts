@@ -6,6 +6,8 @@ import { ISpectrum } from '../types';
 export interface IDataProvider {
   getArray: { (key: string) : number[] };
   setArray: { (key: string, data: any) };
+  getLabel: { (key: string ) : string };
+  setLabel: { (key: string, label: string )};
   removeArray: { (key: string): boolean };
   hasKey: { (key: string): boolean };
   getKeys: { (): string[] };
@@ -13,6 +15,7 @@ export interface IDataProvider {
 
 class DataProvider implements IDataProvider {
   protected arrays: ISpectrum = {};
+  protected labels: {[key:string]: string} = {};
 
   constructor() {
     if (this.constructor == DataProvider) {
@@ -28,6 +31,14 @@ class DataProvider implements IDataProvider {
     return Object.keys(this.arrays);
   }
 
+  getLabel(key: string): string {
+    return this.labels[key] || key;
+  }
+
+  setLabel(key: string, label: string) {
+    this.labels[key] = label;
+  }
+
   hasKey(key: string): boolean {
     return key in this.arrays;
   }
@@ -35,6 +46,7 @@ class DataProvider implements IDataProvider {
   removeArray(key: string): boolean {
     const deleted = key in this.arrays;
     delete this.arrays[key];
+    delete this.labels[key];
     return deleted;
   }
 
