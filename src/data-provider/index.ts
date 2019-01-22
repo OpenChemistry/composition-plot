@@ -1,5 +1,5 @@
-import { ISample, IAxis, ISpectrum, ISegment } from '../types';
-import { has } from 'lodash-es';
+import { ISample, IAxis, ISegment } from '../types';
+import { IDataProvider as ISpectrumProvider } from './spectrum';
 
 const eps = 1e-6;
 
@@ -200,7 +200,7 @@ export class DataProvider {
 
 interface ISampleSpectrum {
   sample: ISample;
-  spectrum: ISpectrum;
+  spectrum: ISpectrumProvider;
 }
 export class HeatMapDataProvider {
   data: ISampleSpectrum[] = [];
@@ -225,7 +225,7 @@ export class HeatMapDataProvider {
     this.data = data;
     this.scalars = new Set();
     for (let d of data) {
-      for (let key of Object.keys(d.spectrum)) {
+      for (let key of d.spectrum.getKeys()) {
         this.scalars.add(key);
       }
     }
@@ -260,11 +260,11 @@ export class HeatMapDataProvider {
     let minY = Infinity;
     let maxY = -Infinity;
     for (let d of this.data) {
-      if (!has(d.spectrum, this.getActiveScalars()[0])) {
+      if (!d.spectrum.hasKey(this.getActiveScalars()[0])) {
         continue;
       }
-      minY = Math.min(minY, ...d.spectrum[this.getActiveScalars()[0]]);
-      maxY = Math.max(maxY, ...d.spectrum[this.getActiveScalars()[0]]);
+      minY = Math.min(minY, ...d.spectrum.getArray(this.getActiveScalars()[0]));
+      maxY = Math.max(maxY, ...d.spectrum.getArray(this.getActiveScalars()[0]));
     }
     const slopeFactor = this.separateSlope ? 2 : 1;
     const spacing = (maxY - minY) / this.numY;
@@ -287,11 +287,11 @@ export class HeatMapDataProvider {
 
     this.indexMaps = [];
     for (let i = 0; i < this.data.length; ++i) {
-      if (!has(this.data[i].spectrum, this.getActiveScalars()[0])) {
+      if (!this.data[i].spectrum.hasKey(this.getActiveScalars()[0])) {
         this.indexMaps.push([]);
         continue;
       }
-      const yData = this.data[i].spectrum[this.getActiveScalars()[0]];
+      const yData = this.data[i].spectrum.getArray(this.getActiveScalars()[0]);
       const map = [];
       for (let j = 0; j < this.numY * slopeFactor; ++j) {
         map.push([]);
@@ -322,7 +322,7 @@ export class HeatMapDataProvider {
         let v = [];
         for (let k = 0; k < y.length; ++k) {
           const idx = y[k];
-          v.push(this.data[i].spectrum[this.getActiveScalars()[1]][idx]);
+          v.push(this.data[i].spectrum.getArray(this.getActiveScalars()[1])[idx]);
         }
         vals.push(this.reduceFn(v));
       }
@@ -372,10 +372,10 @@ export class HeatMapDataProvider {
     if (this.data.length == 0) {
       return;
     }
-    if (!has(this.data[0].spectrum, this.getActiveScalars()[0])) {
+    if (!this.data[0].spectrum.hasKey(this.getActiveScalars()[0])) {
       return;
     }
-    const Y = this.data[0].spectrum[this.getActiveScalars()[0]];
+    const Y = this.data[0].spectrum.getArray(this.getActiveScalars()[0]);
     let currSlope: boolean = null;
 
     for (let i = 1; i < Y.length; ++i) {
@@ -390,7 +390,6 @@ export class HeatMapDataProvider {
       currSlope = slope;
     }
     this.setActiveSegments(this.selection);
-    console.log(this.segments);
   }
 
   private setActiveSegments(selection: string) {
