@@ -97,10 +97,14 @@ class Spectrum {
       let yOffset = i * this.offset;
       let xR = extent<number>(spectrum.getArray(this.plotOptions.xKey));
       let yR = extent<number>(spectrum.getArray(this.plotOptions.yKey));
-      xRange[0] = Math.min(xRange[0], xR[0]);
-      xRange[1] = Math.max(xRange[1], xR[1]);
-      yRange[0] = Math.min(yRange[0], yR[0] + yOffset);
-      yRange[1] = Math.max(yRange[1], yR[1] + yOffset);
+      if (!isNil(xR[0]) && !isNil(xR[1])) {
+        xRange[0] = Math.min(xRange[0], xR[0]);
+        xRange[1] = Math.max(xRange[1], xR[1]);
+      }
+      if (!isNil(yR[0]) && !isNil(yR[1])) {
+        yRange[0] = Math.min(yRange[0], yR[0] + yOffset);
+        yRange[1] = Math.max(yRange[1], yR[1] + yOffset);
+      }
     }
     const w = this.svg.parentElement.clientWidth;
     const h = this.svg.parentElement.clientHeight;
@@ -110,6 +114,9 @@ class Spectrum {
       top: 10,
       right: 10
     }
+    if (xRange[0] == Infinity || xRange[1] == -Infinity) {
+      xRange = [0, 1];
+    }
     this.xScale = scaleLinear().domain(xRange).range([margin.left, w - margin.right]);
 
     // The spectra are stacked for better visibility, adjust the domain accordingly
@@ -117,6 +124,9 @@ class Spectrum {
     // let yDelta = yRange[1] - yRange[0];
     // yDelta *= 1 + 0.1 * (this.spectra.length - 1);
     // yRange[1] = yRange[0] + yDelta;
+    if (yRange[0] == Infinity || yRange[1] == -Infinity) {
+      yRange = [0, 1];
+    }
     this.yScale = scaleLinear().domain(yRange).range([h - margin.bottom, margin.top]);
   }
 
