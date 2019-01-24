@@ -116,6 +116,8 @@ class Spectrum {
     }
     if (xRange[0] == Infinity || xRange[1] == -Infinity) {
       xRange = [0, 1];
+    } else if (xRange[0] === xRange[1]) {
+      xRange[1] = xRange[0] + 1;
     }
     this.xScale = scaleLinear().domain(xRange).range([margin.left, w - margin.right]);
 
@@ -126,6 +128,8 @@ class Spectrum {
     // yRange[1] = yRange[0] + yDelta;
     if (yRange[0] == Infinity || yRange[1] == -Infinity) {
       yRange = [0, 1];
+    } else if (yRange[0] === yRange[1]) {
+      yRange[1] = yRange[0] + 1;
     }
     this.yScale = scaleLinear().domain(yRange).range([h - margin.bottom, margin.top]);
   }
