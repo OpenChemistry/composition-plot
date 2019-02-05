@@ -22,6 +22,8 @@ class Spectrum {
   svg: HTMLElement;
   xScale: ScaleLinear<number, number>;
   yScale: ScaleLinear<number, number>;
+  xRange: [number, number];
+  yRange: [number, number];
   spectra: {spectrum: ISpectrumProvider; sample: ISample}[] = [];
   dataTooltip: Selection<BaseType, {}, null, undefined>;
   dataGroup: Selection<BaseType, {}, null, undefined>;
@@ -34,7 +36,7 @@ class Spectrum {
     this.dataGroup = select(this.svg)
       .append('g')
       .classed('data', true);
-    
+
     this.axesGroup = select(this.svg)
       .append('g')
       .classed('axes', true);
@@ -67,45 +69,63 @@ class Spectrum {
         this.plotOptions.yKey = null;
       }
     }
-    this.setScales();
-    this.drawAxes();
-    this.drawSpectra();
+    this.render();
   }
 
   setAxes(xKey: string, yKey: string) {
     this.plotOptions = {xKey, yKey};
-    this.setScales();
-    this.drawAxes();
-    this.drawSpectra();
+    this.render();
   }
 
   setOffset(offset: number) {
     this.offset = offset;
-    this.setScales();
-    this.drawAxes();
-    this.drawSpectra();
+    this.render();
+  }
+
+  setXRange(xRange: [number, number]) {
+    this.xRange = xRange;
+    this.render();
+  }
+
+  setYRange(yRange: [number, number]) {
+    this.yRange = yRange;
+    this.render();
   }
 
   setScales() {
-    let xRange = [Infinity, -Infinity];
-    let yRange = [Infinity, -Infinity];
-    for (let i = 0; i < this.spectra.length; ++i) {
-      let spectrum = this.spectra[i].spectrum;
-      if (!spectrum.hasKey(this.plotOptions.xKey) || !spectrum.hasKey(this.plotOptions.yKey)) {
-        continue;
-      }
-      let yOffset = i * this.offset;
-      let xR = extent<number>(spectrum.getArray(this.plotOptions.xKey));
-      let yR = extent<number>(spectrum.getArray(this.plotOptions.yKey));
-      if (!isNil(xR[0]) && !isNil(xR[1])) {
-        xRange[0] = Math.min(xRange[0], xR[0]);
-        xRange[1] = Math.max(xRange[1], xR[1]);
-      }
-      if (!isNil(yR[0]) && !isNil(yR[1])) {
-        yRange[0] = Math.min(yRange[0], yR[0] + yOffset);
-        yRange[1] = Math.max(yRange[1], yR[1] + yOffset);
+    let calculateXRange = isNil(this.xRange);
+    let calculateYRange = isNil(this.yRange);
+
+    let xRange = calculateXRange ? [Infinity, -Infinity] : this.xRange;
+    let yRange = calculateYRange ? [Infinity, -Infinity] : this.yRange;
+
+    if (calculateXRange || calculateYRange) {
+      for (let i = 0; i < this.spectra.length; ++i) {
+        let spectrum = this.spectra[i].spectrum;
+        if (!spectrum.hasKey(this.plotOptions.xKey) || !spectrum.hasKey(this.plotOptions.yKey)) {
+          continue;
+        }
+
+        if (calculateXRange) {
+          const xR = extent<number>(spectrum.getArray(this.plotOptions.xKey));
+
+          if (!isNil(xR[0]) && !isNil(xR[1])) {
+            xRange[0] = Math.min(xRange[0], xR[0]);
+            xRange[1] = Math.max(xRange[1], xR[1]);
+          }
+        }
+
+        if (calculateYRange) {
+          const yR = extent<number>(spectrum.getArray(this.plotOptions.yKey));
+          if (!isNil(yR[0]) && !isNil(yR[1])) {
+            const yOffset = i * this.offset;
+            yRange[0] = Math.min(yRange[0], yR[0] + yOffset);
+            yRange[1] = Math.max(yRange[1], yR[1] + yOffset);
+          }
+        }
       }
     }
+
     const w = this.svg.parentElement.clientWidth;
     const h = this.svg.parentElement.clientHeight;
     const margin = {
@@ -114,6 +134,7 @@ class Spectrum {
       top: 10,
       right: 10
     }
+
     if (xRange[0] == Infinity || xRange[1] == -Infinity) {
       xRange = [0, 1];
     } else if (xRange[0] === xRange[1]) {
@@ -143,12 +164,12 @@ class Spectrum {
 
     const xAxis = axisBottom(this.xScale);
     const yAxis = axisLeft(this.yScale);
-    
+
     this.axesGroup.append('g')
       .classed('x-axis', true)
       .attr('transform', `translate(0, ${this.yScale(this.yScale.domain()[0])})`)
       .call(xAxis);
-    
+
     this.axesGroup.append('g')
       .classed('y-axis', true)
       .attr('transform', `translate(${this.xScale(this.xScale.domain()[0])}, 0)`)
@@ -284,6 +305,11 @@ class Spectrum {
       .remove();
   }
 
+  render() {
+    this.setScales();
+    this.drawAxes();
+    this.drawSpectra();
+  }
 }
 
 export { Spectrum };
