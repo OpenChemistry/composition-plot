@@ -16,6 +16,13 @@ interface IPlotOptions {
   yKey: string;
 }
 
+interface IMargins {
+  left: number;
+  bottom: number;
+  top: number;
+  right: number;
+}
+
 class Spectrum {
 
   name: string;
@@ -30,8 +37,15 @@ class Spectrum {
   axesGroup: Selection<BaseType, {}, null, undefined>;
   offset: number = 0.1;
   plotOptions: IPlotOptions;
+  margins: IMargins;
 
   constructor(svg: HTMLElement) {
+    this.margins = {
+      left: 60,
+      bottom: 50,
+      top: 10,
+      right: 10
+    }
     this.svg = svg;
     this.dataGroup = select(this.svg)
       .append('g')
@@ -40,6 +54,15 @@ class Spectrum {
     this.axesGroup = select(this.svg)
       .append('g')
       .classed('axes', true);
+
+    select(this.svg)
+      .append('g')
+        .append('clipPath')
+           .attr('id', 'clip')
+           .append('rect')
+              .attr('width', this.svg.parentElement.clientWidth)
+              .attr('height', this.svg.parentElement.clientHeight-this.margins.top - this.margins.bottom)
+              .attr('transform', `translate(0, ${this.margins.top})`);
 
     this.dataTooltip = select(this.svg.parentElement)
       .append("div")
@@ -128,19 +151,13 @@ class Spectrum {
 
     const w = this.svg.parentElement.clientWidth;
     const h = this.svg.parentElement.clientHeight;
-    const margin = {
-      left: 60,
-      bottom: 50,
-      top: 10,
-      right: 10
-    }
 
     if (xRange[0] == Infinity || xRange[1] == -Infinity) {
       xRange = [0, 1];
     } else if (xRange[0] === xRange[1]) {
       xRange[1] = xRange[0] + 1;
     }
-    this.xScale = scaleLinear().domain(xRange).range([margin.left, w - margin.right]);
+    this.xScale = scaleLinear().domain(xRange).range([this.margins.left, w - this.margins.right]);
 
     // The spectra are stacked for better visibility, adjust the domain accordingly
     // Add 10% to the range for each additional plot
@@ -152,7 +169,7 @@ class Spectrum {
     } else if (yRange[0] === yRange[1]) {
       yRange[1] = yRange[0] + 1;
     }
-    this.yScale = scaleLinear().domain(yRange).range([h - margin.bottom, margin.top]);
+    this.yScale = scaleLinear().domain(yRange).range([h - this.margins.bottom, this.margins.top]);
   }
 
   drawAxes() {
@@ -297,6 +314,7 @@ class Spectrum {
         let color = colorGen.next().value;
         return `rgba(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255}, 0.7)`
       })
+      .attr('clip-path', 'url(#clip)')
       .on('mouseover', onMouseOver)
       .on('mouseout', onMouseOut);
 
