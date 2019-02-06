@@ -8,7 +8,7 @@ import { ScaleLinear, scaleLinear } from 'd3-scale';
 import { line } from 'd3-shape';
 import { getLineColor } from '../utils/colors';
 
-import { zip, isNil } from 'lodash-es';
+import { zip, isNil, uniqueId } from 'lodash-es';
 import { IDataProvider as ISpectrumProvider } from '../data-provider/spectrum';
 
 interface IPlotOptions {
@@ -16,28 +16,55 @@ interface IPlotOptions {
   yKey: string;
 }
 
+interface IMargins {
+  left: number;
+  bottom: number;
+  top: number;
+  right: number;
+}
+
 class Spectrum {
 
   name: string;
+  id: string;
   svg: HTMLElement;
   xScale: ScaleLinear<number, number>;
   yScale: ScaleLinear<number, number>;
+  xRange: [number, number];
+  yRange: [number, number];
   spectra: {spectrum: ISpectrumProvider; sample: ISample}[] = [];
   dataTooltip: Selection<BaseType, {}, null, undefined>;
   dataGroup: Selection<BaseType, {}, null, undefined>;
   axesGroup: Selection<BaseType, {}, null, undefined>;
   offset: number = 0.1;
   plotOptions: IPlotOptions;
+  margins: IMargins;
 
   constructor(svg: HTMLElement) {
+    this.id = uniqueId();
+    this.margins = {
+      left: 60,
+      bottom: 50,
+      top: 10,
+      right: 10
+    }
     this.svg = svg;
     this.dataGroup = select(this.svg)
       .append('g')
       .classed('data', true);
-    
+
     this.axesGroup = select(this.svg)
       .append('g')
       .classed('axes', true);
+
+    this.clipPath = select(this.svg)
+      .append('g')
+        .append('clipPath')
+           .attr('id', `clip${this.id}`)
+           .append('rect')
+              .attr('width', this.svg.parentElement.clientWidth)
+              .attr('height', this.svg.parentElement.clientHeight-this.margins.top - this.margins.bottom)
+              .attr('transform', `translate(0, ${this.margins.top})`);
 
     this.dataTooltip = select(this.svg.parentElement)
       .append("div")
@@ -67,59 +94,72 @@ class Spectrum {
         this.plotOptions.yKey = null;
       }
     }
-    this.setScales();
-    this.drawAxes();
-    this.drawSpectra();
+    this.render();
   }
 
   setAxes(xKey: string, yKey: string) {
     this.plotOptions = {xKey, yKey};
-    this.setScales();
-    this.drawAxes();
-    this.drawSpectra();
+    this.render();
   }
 
   setOffset(offset: number) {
     this.offset = offset;
-    this.setScales();
-    this.drawAxes();
-    this.drawSpectra();
+    this.render();
+  }
+
+  setXRange(xRange: [number, number]) {
+    this.xRange = xRange;
+    this.render();
+  }
+
+  setYRange(yRange: [number, number]) {
+    this.yRange = yRange;
+    this.render();
   }
 
   setScales() {
-    let xRange = [Infinity, -Infinity];
-    let yRange = [Infinity, -Infinity];
-    for (let i = 0; i < this.spectra.length; ++i) {
-      let spectrum = this.spectra[i].spectrum;
-      if (!spectrum.hasKey(this.plotOptions.xKey) || !spectrum.hasKey(this.plotOptions.yKey)) {
-        continue;
-      }
-      let yOffset = i * this.offset;
-      let xR = extent<number>(spectrum.getArray(this.plotOptions.xKey));
-      let yR = extent<number>(spectrum.getArray(this.plotOptions.yKey));
-      if (!isNil(xR[0]) && !isNil(xR[1])) {
-        xRange[0] = Math.min(xRange[0], xR[0]);
-        xRange[1] = Math.max(xRange[1], xR[1]);
-      }
-      if (!isNil(yR[0]) && !isNil(yR[1])) {
-        yRange[0] = Math.min(yRange[0], yR[0] + yOffset);
-        yRange[1] = Math.max(yRange[1], yR[1] + yOffset);
+    let calculateXRange = isNil(this.xRange);
+    let calculateYRange = isNil(this.yRange);
+
+    let xRange = calculateXRange ? [Infinity, -Infinity] : this.xRange;
+    let yRange = calculateYRange ? [Infinity, -Infinity] : this.yRange;
+
+    if (calculateXRange || calculateYRange) {
+      for (let i = 0; i < this.spectra.length; ++i) {
+        let spectrum = this.spectra[i].spectrum;
+        if (!spectrum.hasKey(this.plotOptions.xKey) || !spectrum.hasKey(this.plotOptions.yKey)) {
+          continue;
+        }
+
+        if (calculateXRange) {
+          const xR = extent<number>(spectrum.getArray(this.plotOptions.xKey));
+
+          if (!isNil(xR[0]) && !isNil(xR[1])) {
+            xRange[0] = Math.min(xRange[0], xR[0]);
+            xRange[1] = Math.max(xRange[1], xR[1]);
+          }
+        }
+
+        if (calculateYRange) {
+          const yR = extent<number>(spectrum.getArray(this.plotOptions.yKey));
+          if (!isNil(yR[0]) && !isNil(yR[1])) {
+            const yOffset = i * this.offset;
+            yRange[0] = Math.min(yRange[0], yR[0] + yOffset);
+            yRange[1] = Math.max(yRange[1], yR[1] + yOffset);
+          }
+        }
       }
     }
+
     const w = this.svg.parentElement.clientWidth;
     const h = this.svg.parentElement.clientHeight;
-    const margin = {
-      left: 60,
-      bottom: 50,
-      top: 10,
-      right: 10
-    }
+
     if (xRange[0] == Infinity || xRange[1] == -Infinity) {
       xRange = [0, 1];
     } else if (xRange[0] === xRange[1]) {
       xRange[1] = xRange[0] + 1;
     }
-    this.xScale = scaleLinear().domain(xRange).range([margin.left, w - margin.right]);
+    this.xScale = scaleLinear().domain(xRange).range([this.margins.left, w - this.margins.right]);
 
     // The spectra are stacked for better visibility, adjust the domain accordingly
     // Add 10% to the range for each additional plot
@@ -131,7 +171,7 @@ class Spectrum {
     } else if (yRange[0] === yRange[1]) {
       yRange[1] = yRange[0] + 1;
     }
-    this.yScale = scaleLinear().domain(yRange).range([h - margin.bottom, margin.top]);
+    this.yScale = scaleLinear().domain(yRange).range([h - this.margins.bottom, this.margins.top]);
   }
 
   drawAxes() {
@@ -143,12 +183,12 @@ class Spectrum {
 
     const xAxis = axisBottom(this.xScale);
     const yAxis = axisLeft(this.yScale);
-    
+
     this.axesGroup.append('g')
       .classed('x-axis', true)
       .attr('transform', `translate(0, ${this.yScale(this.yScale.domain()[0])})`)
       .call(xAxis);
-    
+
     this.axesGroup.append('g')
       .classed('y-axis', true)
       .attr('transform', `translate(${this.xScale(this.xScale.domain()[0])}, 0)`)
@@ -276,6 +316,7 @@ class Spectrum {
         let color = colorGen.next().value;
         return `rgba(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255}, 0.7)`
       })
+      .attr('clip-path', `url(#clip${this.id})`)
       .on('mouseover', onMouseOver)
       .on('mouseout', onMouseOut);
 
@@ -284,6 +325,11 @@ class Spectrum {
       .remove();
   }
 
+  render() {
+    this.setScales();
+    this.drawAxes();
+    this.drawSpectra();
+  }
 }
 
 export { Spectrum };
