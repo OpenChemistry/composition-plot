@@ -57,7 +57,7 @@ class Spectrum {
       .append('g')
       .classed('axes', true);
 
-    this.clipPath = select(this.svg)
+    select(this.svg)
       .append('g')
         .append('clipPath')
            .attr('id', `clip${this.id}`)
