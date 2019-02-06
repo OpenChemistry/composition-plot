@@ -8,7 +8,7 @@ import { ScaleLinear, scaleLinear } from 'd3-scale';
 import { line } from 'd3-shape';
 import { getLineColor } from '../utils/colors';
 
-import { zip, isNil } from 'lodash-es';
+import { zip, isNil, uniqueId } from 'lodash-es';
 import { IDataProvider as ISpectrumProvider } from '../data-provider/spectrum';
 
 interface IPlotOptions {
@@ -26,6 +26,7 @@ interface IMargins {
 class Spectrum {
 
   name: string;
+  id: string;
   svg: HTMLElement;
   xScale: ScaleLinear<number, number>;
   yScale: ScaleLinear<number, number>;
@@ -40,6 +41,7 @@ class Spectrum {
   margins: IMargins;
 
   constructor(svg: HTMLElement) {
+    this.id = uniqueId();
     this.margins = {
       left: 60,
       bottom: 50,
@@ -55,10 +57,10 @@ class Spectrum {
       .append('g')
       .classed('axes', true);
 
-    select(this.svg)
+    this.clipPath = select(this.svg)
       .append('g')
         .append('clipPath')
-           .attr('id', 'clip')
+           .attr('id', `clip${this.id}`)
            .append('rect')
               .attr('width', this.svg.parentElement.clientWidth)
               .attr('height', this.svg.parentElement.clientHeight-this.margins.top - this.margins.bottom)
@@ -314,7 +316,7 @@ class Spectrum {
         let color = colorGen.next().value;
         return `rgba(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255}, 0.7)`
       })
-      .attr('clip-path', 'url(#clip)')
+      .attr('clip-path', `url(#clip${this.id})`)
       .on('mouseover', onMouseOver)
       .on('mouseout', onMouseOut);
 
