@@ -39,6 +39,8 @@ class Spectrum {
   offset: number = 0.1;
   plotOptions: IPlotOptions;
   margins: IMargins;
+  showPoints: boolean = false;
+  onSelect: Function = () => {};
 
   constructor(svg: HTMLElement) {
     this.id = uniqueId();
@@ -115,6 +117,18 @@ class Spectrum {
   setYRange(yRange: [number, number]) {
     this.yRange = yRange;
     this.render();
+  }
+
+  setShowPoints(show: boolean) {
+    this.showPoints = show;
+    this.render();
+  }
+
+  setOnSelect(onSelect: Function) {
+    if (!onSelect) {
+      onSelect = () => {};
+    }
+    this.onSelect = onSelect;
   }
 
   setScales() {
@@ -323,6 +337,50 @@ class Spectrum {
     // Exit
     plots.exit()
       .remove();
+
+    // Conditionally plot the points on the paths
+    this.dataGroup.selectAll('g').remove();
+
+    if (!this.showPoints) {
+      return;
+    }
+
+    let pointGroups = this.dataGroup.selectAll('g')
+      .data(this.spectra);
+
+    colorGen = getLineColor();
+
+    let points = pointGroups
+      .enter()
+      .append('g')
+      .datum((d, i) => {
+        if (!d.spectrum.hasKey(this.plotOptions.xKey) || !d.spectrum.hasKey(this.plotOptions.yKey)) {
+          return [null, null];
+        }
+        return zip(d.spectrum.getArray(this.plotOptions.xKey), d.spectrum.getArray(this.plotOptions.yKey).map(val => val + i * this.offset));
+      })
+      .attr('fill', () => {
+        let color = colorGen.next().value;
+        return `rgba(${Math.round(color[0] * 255)}, ${Math.round(color[1] * 255)}, ${Math.round(color[2] * 255)}, 0.7)`
+      })
+      .selectAll('circle')
+      .data( d => d);
+
+    const onClick = (d, i, targets: any) => {
+      // d is the datum, i is the index in the data
+      d;
+      i;
+      targets;
+      if (this.onSelect) {
+        this.onSelect(i, d);
+      }
+    }
+
+    points.enter().append('circle')
+      .attr('r', 4)
+      .attr('cx', (d) => this.xScale(d[0]))
+      .attr('cy', (d) => this.yScale(d[1]))
+      .on('click', onClick);
   }
 
   render() {
