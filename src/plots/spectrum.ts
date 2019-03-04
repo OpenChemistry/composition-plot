@@ -295,7 +295,7 @@ class Spectrum {
       .attr('stroke-width', strokeWidth)
       .attr('stroke', () => {
         let color = colorGen.next().value;
-        return `rgba(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255}, 0.7)`
+        return `rgba(${Math.round(color[0] * 255)}, ${Math.round(color[1] * 255)}, ${Math.round(color[2] * 255)}, 0.7)`
       })
       .on('mouseover', onMouseOver)
       .on('mouseout', onMouseOut);
@@ -314,7 +314,7 @@ class Spectrum {
       .attr('stroke-width', strokeWidth)
       .attr('stroke', () => {
         let color = colorGen.next().value;
-        return `rgba(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255}, 0.7)`
+        return `rgba(${Math.round(color[0] * 255)}, ${Math.round(color[1] * 255)}, ${Math.round(color[2] * 255)}, 0.7)`
       })
       .attr('clip-path', `url(#clip${this.id})`)
       .on('mouseover', onMouseOver)
