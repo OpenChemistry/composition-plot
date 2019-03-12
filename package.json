@@ -21,7 +21,8 @@
     "d3-shape": "^1.2.0",
     "d3-transition": "^1.1.1",
     "lodash-es": "^4.17.10",
-    "plotly.js": "^1.42.5"
+    "plotly.js": "^1.42.5",
+    "vtk.js-lite": "git+https://github.com/alesgenova/vtk.js-lite.git"
   },
   "devDependencies": {
     "@openchemistry/types": "^0.8.4",
@@ -32,6 +33,7 @@
     "@types/d3-shape": "^1.2.3",
     "@types/d3-transition": "^1.1.2",
     "@types/lodash-es": "^4.17.1",
+    "@types/three": "^0.93.26",
     "typescript": "^3.0.3"
   },
   "author": "Alessandro Genova, Kitware Inc.",

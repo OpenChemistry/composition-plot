@@ -1,0 +1,138 @@
+import { ISample, Vec3 } from '../types';
+
+export interface ICompositionToPositionProvider {
+  getPosition: (composition: number[]) => Vec3;
+}
+
+export class NearestCompositionToPositionProvider implements ICompositionToPositionProvider {
+  private dimensions : number;
+  private resolution : number;
+  private decimalDigits: number;
+  private compositionMap : {[composition: string]: Vec3} = {};
+
+  setData(
+    dimensions: number,
+    resolution: number,
+    data: number[],
+    fractional: boolean = true
+  ) {
+    if (!fractional) {
+      resolution /= 100;
+    }
+    this.resolution = resolution;
+    this.dimensions = dimensions;
+    this.dimensions;
+    this.decimalDigits = Math.ceil(-Math.log10(resolution));
+    const n = data.length;
+    const chunk = dimensions + 3;
+    if (n % chunk !== 0) {
+      throw new Error(`The provided data does not match the expected size for a ${dimensions}-dimensional set`);
+    }
+    const nCompositions = n / chunk;
+
+    for (let i = 0; i < nCompositions; ++i) {
+      let composition: number[] = data.slice(i * chunk, i * chunk + dimensions);
+      if (!fractional) {
+        composition = composition.map(val => val / 100);
+      }
+      const key = this.compositionToKey(composition);
+      const position = data.slice(i * chunk + dimensions, (i + 1) * chunk) as Vec3;
+      this.compositionMap[key] = position;
+    }
+  }
+
+  getPosition(composition: number[]) : Vec3 {
+    const key = this.compositionToKey(composition);
+    if (key in this.compositionMap) {
+      return this.compositionMap[key];
+    }
+    return [0, 0, 0];
+  }
+
+  private compositionToKey(composition: number[]) : string {
+    return composition
+      .map(val => this.resolution * Math.round(val / this.resolution))
+      .map(val => val.toFixed(this.decimalDigits))
+      .join(',');
+  }
+
+}
+
+export class DataProvider {
+  samples: ISample[] = [];
+  scalars: Set<string> = new Set();
+  activeScalar: string;
+  axisToIdx: {[element: string]: number} = {};
+  idxToAxis: {[element: number]: string} = {};
+
+  dimensions: number;
+
+  constructor(dimensions: number) {
+    this.dimensions = dimensions;
+  }
+
+  setData(samples: ISample[]) : void {
+    this.samples = [];
+    this.scalars = new Set();
+
+    if (samples.length === 0) {
+      return;
+    }
+
+    for (let sample of samples) {
+      for (let key of Object.keys(sample.scalars)) {
+        this.scalars.add(key);
+      }
+    }
+
+    this.samples = samples;
+    this.setActiveScalar(this.getDefaultScalar(this.getActiveScalar()));
+  }
+
+  getDefaultScalar(key: string = null) : string {
+    if (this.scalars.has(key)) {
+      return key;
+    } else {
+      try {
+        return this.scalars.values().next().value;
+      } catch(e) {
+        return null;
+      }
+    }
+  }
+
+  getScalarRange(key: string) : [number, number] {
+    const values: number[] = this.samples.map(sample => DataProvider.getSampleScalar(sample, key));
+    return [Math.min(...values), Math.max(...values)];
+  }
+
+  getScalars() : string[] {
+    const scalars = [];
+    this.scalars.forEach((val) => {scalars.push(val)});
+    return scalars;
+  }
+
+  getActiveScalar(): string {
+    return this.activeScalar;
+  }
+
+  setActiveScalar(key: string): void {
+    if (this.scalars.has(key)) {
+      this.activeScalar = key;
+    } else {
+      console.warn(`Unable to set ${key} as active scalar`);
+    }
+  }
+
+  static getSampleScalar(sample: ISample, scalar: string) : number {
+    if (scalar in sample.scalars) {
+      return sample.scalars[scalar];
+    } else {
+      return null;
+    }
+  }
+
+  static isSelected(sample: ISample, selectedKeys: Set<string>) : boolean {
+    return selectedKeys.has(sample._id);
+  }
+}

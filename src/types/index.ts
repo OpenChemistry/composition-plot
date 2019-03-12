@@ -1,3 +1,6 @@
+export type Vec2 = [number, number];
+export type Vec3 = [number, number, number];
+
 export interface ISample {
   sampleNum: number;
   composition: {
@@ -15,7 +18,7 @@ export interface ISample {
 export interface IAxis {
   element: string;
   spacing: number;
-  range: [number, number];
+  range: Vec2;
 }
 
 export interface ISpectrum {
