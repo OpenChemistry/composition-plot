@@ -31,6 +31,7 @@ class MultidimensionalPlot {
     this.actor = vtk.vtkActor.newInstance();
     this.lut = vtk.vtkColorTransferFunction.newInstance();
 
+    this.mapper.setUseLookupTableScalarRange(true);
     this.mapper.setInputData(this.polyData);
     this.mapper.setRadius(1.5);
     this.mapper.setLookupTable(this.lut);
