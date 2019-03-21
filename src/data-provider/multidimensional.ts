@@ -64,6 +64,7 @@ export class DataProvider {
   activeScalar: string;
   axisToIdx: {[element: string]: number} = {};
   idxToAxis: {[element: number]: string} = {};
+  filter: (sample: ISample) => boolean = () => true;
 
   dimensions: number;
 
@@ -122,6 +123,18 @@ export class DataProvider {
     } else {
       console.warn(`Unable to set ${key} as active scalar`);
     }
+  }
+
+  setFilter(filter: undefined | null | ((sample: ISample) => boolean) = null) {
+    if (filter === undefined || filter === null) {
+      filter = () => true;
+    }
+    this.filter = filter;
+  }
+
+  getSamples() : ISample[] {
+    const filter = this.filter;
+    return this.samples.filter(sample => filter(sample));
   }
 
   static getSampleScalar(sample: ISample, scalar: string) : number {

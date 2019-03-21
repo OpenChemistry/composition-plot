@@ -45,7 +45,8 @@ class MultidimensionalPlot {
   }
 
   dataUpdated() {
-    const nSamples = this.dp.samples.length;
+    const samples = this.dp.getSamples();
+    const nSamples = samples.length;
     const coords = new Float32Array(3 * nSamples);
     const scalars = {};
     const scalarKeys = this.dp.getScalars();
@@ -54,7 +55,7 @@ class MultidimensionalPlot {
     }
 
     for (let i = 0; i < nSamples; ++i) {
-      let sample = this.dp.samples[i];
+      let sample = samples[i];
       let composition = Object.keys(sample.composition).map(key => sample.composition[key]);
       let position = this.compositionToPosition.getPosition(composition);
       coords[3 * i] = position[0];
