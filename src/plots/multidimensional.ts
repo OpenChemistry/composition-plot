@@ -12,6 +12,7 @@ class MultidimensionalPlot {
   mapper;
   actor;
   lut;
+  labelWidgets = [];
 
   constructor(
     div: HTMLElement, dp: DataProvider, compositionToPosition: NearestCompositionToPositionProvider
@@ -71,10 +72,40 @@ class MultidimensionalPlot {
         vtk.vtkDataArray.newInstance({name: key, values: scalars[key]})
       );
     }
+
+    this.addLabels();
+
     this.polyData.getPointData().setActiveScalars(this.dp.getActiveScalar());
     this.polyData.modified();
     this.renderer.resetCamera();
     this.renderWindow.render();
+  }
+
+  addLabels() {
+    this.removeLabels();
+    const elements = this.dp.getElements();
+    const composition = new Array(elements.length);
+    for (let i = 0; i < elements.length; ++i) {
+      for (let j = 0; j < elements.length; ++j) {
+        composition[j] = 0.0;
+      }
+      composition[i] = 1.0;
+      let position = this.compositionToPosition.getPosition(composition)
+        .map(val => 1.2 * val);
+      const labelWidget = vtk.vtkLabelWidget.newInstance();
+      labelWidget.setInteractor(this.renderWindow.getInteractor());
+      labelWidget.setEnabled(1);
+      labelWidget.setProcessEvents(false);
+      labelWidget.getWidgetRep().setLabelText(elements[i]);
+      labelWidget.getWidgetRep().setWorldPosition(position);
+      this.labelWidgets.push(labelWidget);
+    }
+  }
+
+  removeLabels() {
+    for (let labelWidget of this.labelWidgets) {
+      labelWidget.setEnabled(0);
+    }
   }
 
   activeScalarsUpdated() {

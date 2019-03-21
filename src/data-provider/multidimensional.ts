@@ -61,6 +61,7 @@ export class NearestCompositionToPositionProvider implements ICompositionToPosit
 export class DataProvider {
   samples: ISample[] = [];
   scalars: Set<string> = new Set();
+  elements: Set<string> = new Set();
   activeScalar: string;
   axisToIdx: {[element: string]: number} = {};
   idxToAxis: {[element: number]: string} = {};
@@ -83,6 +84,9 @@ export class DataProvider {
     for (let sample of samples) {
       for (let key of Object.keys(sample.scalars)) {
         this.scalars.add(key);
+      }
+      for (let key of Object.keys(sample.composition)) {
+        this.elements.add(key);
       }
     }
 
@@ -123,6 +127,12 @@ export class DataProvider {
     } else {
       console.warn(`Unable to set ${key} as active scalar`);
     }
+  }
+
+  getElements() : string[] {
+    const elements = [];
+    this.elements.forEach((val) => {elements.push(val)});
+    return elements;
   }
 
   setFilter(filter: undefined | null | ((sample: ISample) => boolean) = null) {
