@@ -4,7 +4,11 @@ export { Spectrum } from './plots/spectrum';
 export { HeatMap } from './plots/heatmap';
 export { MultidimensionalPlot } from './plots/multidimensional';
 export { DataProvider, HeatMapDataProvider } from './data-provider';
-export { ICompositionToPositionProvider, NearestCompositionToPositionProvider} from './data-provider/multidimensional';
+export {
+  ICompositionToPositionProvider,
+  NearestCompositionToPositionProvider,
+  AnaliticalCompositionToPositionProvider
+} from './data-provider/multidimensional';
 import * as colors from './utils/colors';
 import * as spline from './utils/spline';
 export { colors, spline };

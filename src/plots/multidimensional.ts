@@ -55,9 +55,19 @@ class MultidimensionalPlot {
       scalars[key] = new Float32Array(nSamples);
     }
 
+    let elements = this.dp.getElements();
+    if (elements.length < this.compositionToPosition.getDimensions()) {
+      let extra = this.compositionToPosition.getDimensions() - elements.length;
+      for (let i = 0; i < extra; ++i ) {
+        elements.push('');
+      }
+    } else if (elements.length > this.compositionToPosition.getDimensions()) {
+      throw new Error(`The composition space ${elements} is larger than 8`);
+    }
+
     for (let i = 0; i < nSamples; ++i) {
       let sample = samples[i];
-      let composition = Object.keys(sample.composition).map(key => sample.composition[key]);
+      let composition = elements.map(key => sample.composition[key] || 0.0);
       let position = this.compositionToPosition.getPosition(composition);
       coords[3 * i] = position[0];
       coords[3 * i + 1] = position[1];
@@ -86,7 +96,7 @@ class MultidimensionalPlot {
     const elements = this.dp.getElements();
     const composition = new Array(elements.length);
     for (let i = 0; i < elements.length; ++i) {
-      for (let j = 0; j < elements.length; ++j) {
+      for (let j = 0; j < this.compositionToPosition.getDimensions(); ++j) {
         composition[j] = 0.0;
       }
       composition[i] = 1.0;

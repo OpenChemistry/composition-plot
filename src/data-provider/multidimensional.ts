@@ -2,6 +2,31 @@ import { ISample, Vec3 } from '../types';
 
 export interface ICompositionToPositionProvider {
   getPosition: (composition: number[]) => Vec3;
+  getDimensions: () => number;
+}
+
+export class AnaliticalCompositionToPositionProvider implements ICompositionToPositionProvider {
+  private dimensions = 4;
+  private compositionToPosition = ([a, b, c, d]: number[]) : Vec3 => {
+    const scale = 30;
+    let x = (c + 1 - b) / 2;
+    let y = Math.sqrt(3) / 2 * a + Math.sqrt(3) / 6 * d;
+    let z = Math.sqrt(3) / 2 * d;
+    return [scale * (x - 0.5), scale * (y - Math.sqrt(3) / 3), scale * (z - Math.sqrt(3) / 4)];
+  }
+
+  setFunction(dimensions: number, fn: (composition: number[]) => Vec3) {
+    this.dimensions = dimensions;
+    this.compositionToPosition = fn;
+  }
+
+  getPosition(composition: number[]) : Vec3 {
+    return this.compositionToPosition(composition);
+  }
+
+  getDimensions() : number {
+    return this.dimensions;
+  }
 }
 
 export class NearestCompositionToPositionProvider implements ICompositionToPositionProvider {
@@ -47,6 +72,10 @@ export class NearestCompositionToPositionProvider implements ICompositionToPosit
       return this.compositionMap[key];
     }
     return [0, 0, 0];
+  }
+
+  getDimensions() : number {
+    return this.dimensions;
   }
 
   private compositionToKey(composition: number[]) : string {
