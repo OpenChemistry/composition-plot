@@ -113,6 +113,8 @@ class TernaryPlot {
   }
 
   drawGrid() {
+    this.gridGroup.selectAll('circle').remove();
+
     let circles = this.gridGroup
       .selectAll('circle')
       .data(this.vertices);
@@ -136,6 +138,8 @@ class TernaryPlot {
     if (!axes[0]) {
       return;
     }
+
+    this.gridGroup.selectAll('text').remove();
 
     let labels = this.gridGroup
       .selectAll('text')
@@ -328,6 +332,9 @@ class TernaryPlot {
       .on('mousedown', onMouseDown);
 
     //Remove
+    hexagons
+      .exit()
+      .remove();
   }
 
   setColorMap(map: [number, number, number][], range: [number, number]) {
