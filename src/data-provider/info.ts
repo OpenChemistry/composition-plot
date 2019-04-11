@@ -1,7 +1,5 @@
 import { ISample } from '../types';
 
-const eps = Number.EPSILON;
-
 export class InfoProvider {
   samples: ISample[] = [];
   scalars: Set<string> = new Set();
@@ -59,7 +57,7 @@ export class InfoProvider {
     const elements = Object.keys(compositions);
     for (let element of elements) {
       const range: [number, number] = compositions[element];
-      if (range[1] > eps) {
+      if (range[1] > Number.EPSILON) {
         this.elements.add(element);
         this.elementsRange[element] = range;
       }

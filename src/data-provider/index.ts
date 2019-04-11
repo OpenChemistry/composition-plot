@@ -1,8 +1,6 @@
 import { ISample, IAxis, ISegment } from '../types';
 import { IDataProvider as ISpectrumProvider } from './spectrum';
 
-const eps = Number.EPSILON;
-
 export class DataProvider {
   samples: ISample[] = [];
   scalars: Set<string> = new Set();
@@ -64,7 +62,7 @@ export class DataProvider {
 
     for (let element of elements) {
       const axis = this.axes[element];
-      if (discardAxes && Math.abs(axis.spacing) < eps) {
+      if (discardAxes && Math.abs(axis.spacing) < Number.EPSILON) {
         delete this.axes[element];
       }
     }
@@ -196,12 +194,12 @@ export class DataProvider {
       if (typeof axis.range === 'function') {
         samples = samples.filter(sample => {
           const fraction = axis.element in sample.composition ? sample.composition[axis.element] : 0;
-          return axis.range(fraction, eps);
+          return axis.range(fraction, Number.EPSILON);
         });
       } else {
         samples = samples.filter(sample => {
           const fraction = axis.element in sample.composition ? sample.composition[axis.element] : 0;
-          if (axis.range[0] - eps < fraction && fraction < axis.range[1] + eps) {
+          if (axis.range[0] - Number.EPSILON < fraction && fraction < axis.range[1] + Number.EPSILON) {
             return true;
           } else {
             return false;
