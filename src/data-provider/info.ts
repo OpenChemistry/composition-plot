@@ -1,6 +1,6 @@
 import { ISample } from '../types';
 
-const eps = 1e-6;
+const eps = Number.EPSILON;
 
 export class InfoProvider {
   samples: ISample[] = [];

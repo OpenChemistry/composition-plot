@@ -1,7 +1,7 @@
 import { ISample, IAxis, ISegment } from '../types';
 import { IDataProvider as ISpectrumProvider } from './spectrum';
 
-const eps = 1e-6;
+const eps = Number.EPSILON;
 
 export class DataProvider {
   samples: ISample[] = [];
