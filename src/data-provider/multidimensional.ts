@@ -5,7 +5,7 @@ export interface ICompositionToPositionProvider {
   getDimensions: () => number;
 }
 
-export class AnaliticalCompositionToPositionProvider implements ICompositionToPositionProvider {
+export class AnalyticalCompositionToPositionProvider implements ICompositionToPositionProvider {
   private dimensions = 4;
   private compositionToPosition = ([a, b, c, d]: number[]) : Vec3 => {
     const scale = 30;

@@ -8,7 +8,7 @@ export { InfoProvider } from './data-provider/info';
 export {
   ICompositionToPositionProvider,
   NearestCompositionToPositionProvider,
-  AnaliticalCompositionToPositionProvider
+  AnalyticalCompositionToPositionProvider
 } from './data-provider/multidimensional';
 import * as colors from './utils/colors';
 import * as spline from './utils/spline';
