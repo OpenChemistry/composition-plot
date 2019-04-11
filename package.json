@@ -22,7 +22,7 @@
     "d3-transition": "^1.1.1",
     "lodash-es": "^4.17.10",
     "plotly.js": "^1.42.5",
-    "vtk.js-lite": "git+https://github.com/alesgenova/vtk.js-lite.git"
+    "vtk.js": "^8.4.1"
   },
   "devDependencies": {
     "@openchemistry/types": "^0.8.4",

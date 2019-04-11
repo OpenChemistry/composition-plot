@@ -1,5 +1,7 @@
 import { DataProvider, NearestCompositionToPositionProvider } from '../data-provider/multidimensional';
-import * as vtk from 'vtk.js-lite';
+
+import 'vtk.js';
+declare const vtk: any;
 
 class MultidimensionalPlot {
   div: HTMLElement;
@@ -21,16 +23,16 @@ class MultidimensionalPlot {
     this.dp = dp;
     this.compositionToPosition = compositionToPosition;
 
-    this.viewer = vtk.vtkGenericRenderWindow.newInstance();
+    this.viewer = vtk.Rendering.Misc.vtkGenericRenderWindow.newInstance();
     this.viewer.setBackground(0.9, 0.9, 0.9);
     this.viewer.setContainer(this.div);
     this.viewer.resize();
     this.renderer = this.viewer.getRenderer();
     this.renderWindow = this.viewer.getRenderWindow();
-    this.polyData = vtk.vtkPolyData.newInstance();
-    this.mapper = vtk.vtkSphereMapper.newInstance();
-    this.actor = vtk.vtkActor.newInstance();
-    this.lut = vtk.vtkColorTransferFunction.newInstance();
+    this.polyData = vtk.Common.DataModel.vtkPolyData.newInstance();
+    this.mapper = vtk.Rendering.Core.vtkSphereMapper.newInstance();
+    this.actor = vtk.Rendering.Core.vtkActor.newInstance();
+    this.lut = vtk.Rendering.Core.vtkColorTransferFunction.newInstance();
 
     this.mapper.setUseLookupTableScalarRange(true);
     this.mapper.setInputData(this.polyData);
@@ -79,7 +81,7 @@ class MultidimensionalPlot {
     this.polyData.getPoints().setData(coords);
     for (let key of scalarKeys) {
       this.polyData.getPointData().addArray(
-        vtk.vtkDataArray.newInstance({name: key, values: scalars[key]})
+        vtk.Common.Core.vtkDataArray.newInstance({name: key, values: scalars[key]})
       );
     }
 
@@ -102,7 +104,7 @@ class MultidimensionalPlot {
       composition[i] = 1.0;
       let position = this.compositionToPosition.getPosition(composition)
         .map(val => 1.2 * val);
-      const labelWidget = vtk.vtkLabelWidget.newInstance();
+      const labelWidget = vtk.Interaction.Widgets.vtkLabelWidget.newInstance();
       labelWidget.setInteractor(this.renderWindow.getInteractor());
       labelWidget.setEnabled(1);
       labelWidget.setProcessEvents(false);
