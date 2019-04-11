@@ -7,6 +7,7 @@ export class DataProvider {
   samples: ISample[] = [];
   scalars: Set<string> = new Set();
   activeScalar: string;
+  activeAxes: string[] = [];
   axisToIdx: {[element: string]: number} = {};
   idxToAxis: {[element: number]: string} = {};
 
@@ -68,11 +69,13 @@ export class DataProvider {
       }
     }
 
-    if (Object.keys(this.axes).length !== this.dimensions) {
-      console.warn(`A quaternary data provider can only span a ${this.dimensions}-dimensional space, but ${elements.length} different elements are found in the dataset`);
-      // throw new Error(`A quaternary data provider can only span a ${this.dimensions}-dimensional space, but ${elements.length} different elements are found in the dataset`);
+    let elementNames = Object.keys(this.axes);
+    if (elementNames.length < this.dimensions) {
+      console.warn(`Samples provided to this ${this.dimensions}-dimensional data provider only span ${elementNames.length} dimensions.`);
     }
-    
+
+    this.activeAxes = elementNames.slice(Math.min(elementNames.length, this.dimensions));
+
     this.setAxisOrder(Object.keys(this.axes));
     this.samples = samples;
     this.setActiveScalar(this.getDefaultScalar(this.getActiveScalar()));
@@ -103,6 +106,10 @@ export class DataProvider {
     }
   }
 
+  setActiveAxes(activeAxes: string[]) {
+    this.activeAxes = activeAxes;
+  }
+
   setAxes(axes: {[element: string]: IAxis}) {
     // Ensure the new axes match the elements in the dataset
     for (let key of Object.keys(axes)) {
@@ -113,8 +120,16 @@ export class DataProvider {
     }
   }
 
-  getAxes() {
-    return this.axes;
+  getAxes(force = false) {
+    if (force) {
+      return this.axes;
+    }
+
+    let axes = {};
+    for (let element of this.activeAxes) {
+      axes[element] = this.axes[element];
+    }
+    return axes;
   }
 
   getAxis(val: string | number) {
