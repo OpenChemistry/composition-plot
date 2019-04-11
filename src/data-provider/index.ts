@@ -110,6 +110,10 @@ export class DataProvider {
     this.activeAxes = activeAxes;
   }
 
+  getActiveAxes() {
+    return this.activeAxes;
+  }
+
   setAxes(axes: {[element: string]: IAxis}) {
     // Ensure the new axes match the elements in the dataset
     for (let key of Object.keys(axes)) {

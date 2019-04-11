@@ -104,7 +104,16 @@ class QuaternaryPlot {
 
   _setShellData(plots: TernaryPlot[], constValue: number) {
     const axes = this.dp.getAxes();
-    const filters = Object.values(axes).map(axis => ({...axis, range: [constValue, 1]}) as IAxis);
+    const allAxes = this.dp.getAxes(true);
+    const activeAxes = new Set(this.dp.getActiveAxes());
+
+    const filters = Object.values(allAxes).map(axis => {
+      if (activeAxes.has(axis.element)) {
+        return {...axis, range: [constValue, 1]} as IAxis;
+      } else {
+        return {...axis, range: (val, eps) => val < eps } as any as IAxis;
+      }
+    });
     const [Aidx, Bidx, Cidx, Didx] = Object.keys(axes);
 
     let shellData: ISample[] = this.dp.slice(filters);
