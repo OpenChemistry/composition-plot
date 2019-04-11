@@ -328,6 +328,9 @@ class TernaryPlot {
       .on('mousedown', onMouseDown);
 
     //Remove
+    hexagons
+      .exit()
+      .remove();
   }
 
   setColorMap(map: [number, number, number][], range: [number, number]) {
