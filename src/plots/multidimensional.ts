@@ -3,6 +3,10 @@ import { DataProvider, NearestCompositionToPositionProvider } from '../data-prov
 import 'vtk.js';
 declare const vtk: any;
 
+function makeCamera() {
+  return vtk.Rendering.Core.vtkCamera.newInstance();
+}
+
 class MultidimensionalPlot {
   div: HTMLElement;
   dp: DataProvider;
@@ -45,6 +49,26 @@ class MultidimensionalPlot {
   setBackground(color: [number, number, number]) {
     this.viewer.setBackground(...color);
     this.renderWindow.render();
+  }
+
+  setCamera(camera, resetCamera = false, watchModified = false) {
+    this.renderer.setActiveCamera(camera);
+
+    if (resetCamera) {
+      this.renderer.resetCamera();
+    }
+
+    if (watchModified) {
+      camera.onModified(() => {
+        this.renderWindow.render();
+      });
+    }
+
+    this.renderWindow.render();
+  }
+
+  getCamera() {
+    return this.renderer.getActiveCamera();
   }
 
   dataUpdated() {
@@ -137,4 +161,4 @@ class MultidimensionalPlot {
   }
 }
 
-export { MultidimensionalPlot };
+export { MultidimensionalPlot, makeCamera };
