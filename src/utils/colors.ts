@@ -44,6 +44,16 @@ export function rgbToHex(r: number, g: number, b: number) : string {
   return red + green + blue;
 };
 
+export function hexTorgb(hex: string) : [number, number, number] {
+  if (hex.length !== 6) {
+    return [0, 0, 0];
+  }
+  let r = parseInt(hex.slice(0, 2), 16);
+  let g = parseInt(hex.slice(2, 4), 16);
+  let b = parseInt(hex.slice(4, 6), 16);
+  return [r / 255, g / 255, b / 255];
+}
+
 function numToHex(n: number) : string {
   let hex = Number(n).toString(16);
   if (hex.length < 2) {

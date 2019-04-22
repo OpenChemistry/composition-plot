@@ -1,6 +1,7 @@
 import { DataProvider, NearestCompositionToPositionProvider } from '../data-provider/multidimensional';
 
 import 'vtk.js';
+import { hexTorgb } from '../utils/colors';
 declare const vtk: any;
 
 function makeCamera() {
@@ -46,8 +47,12 @@ class MultidimensionalPlot {
     this.renderer.addActor(this.actor);
   }
 
-  setBackground(color: [number, number, number]) {
-    this.viewer.setBackground(...color);
+  setBackground(color: [number, number, number] | string) {
+    if (Array.isArray(color)) {
+      this.viewer.setBackground(...color);
+    } else {
+      this.viewer.setBackground(...hexTorgb(color.replace('#', '')));
+    }
     this.renderWindow.render();
   }
 
