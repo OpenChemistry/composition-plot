@@ -104,7 +104,7 @@ class MultidimensionalPlot {
       coords[3 * i + 1] = position[1];
       coords[3 * i + 2] = position[2];
       for (let key of scalarKeys) {
-        scalars[key][i] = sample.scalars[key] || 0.0;
+        scalars[key][i] = DataProvider.getSampleScalar(sample, key) || 0.0;
       }
     }
     this.polyData.getPoints().setData(coords);

@@ -227,11 +227,11 @@ class TernaryPlot {
 
     let points3d = this.dp.samples.map((sample: ISample): [number, number, number] => {
       return [
-        sample.composition[axes[0].element] || 0,
-        sample.composition[axes[1].element] || 0,
-        sample.composition[axes[2].element] || 0
+        DataProvider.getSampleElementFraction(sample, axes[0].element),
+        DataProvider.getSampleElementFraction(sample, axes[1].element),
+        DataProvider.getSampleElementFraction(sample, axes[2].element)
       ]
-    })
+    });
 
     let hexFn = line()
       .x((d) => d[0])
@@ -270,7 +270,7 @@ class TernaryPlot {
         ${this.dp.getAxisLabel(0)}: ${points3d[i][0].toFixed(2)}<br>
         ${this.dp.getAxisLabel(1)}: ${points3d[i][1].toFixed(2)}<br>
         ${this.dp.getAxisLabel(2)}: ${points3d[i][2].toFixed(2)}<br>
-        ${this.dp.getAxisLabel(3)}: ${axes[3] ? (this.dp.samples[i].composition[axes[3].element] || 0).toFixed(2) : ''}<br>
+        ${this.dp.getAxisLabel(3)}: ${axes[3] ? DataProvider.getSampleElementFraction(this.dp.samples[i], axes[3].element).toFixed(2) : ''}<br>
         ${this.dp.getActiveScalar().replace('\\u002', '.')}: ${DataProvider.getSampleScalar(this.dp.samples[i], this.dp.getActiveScalar()).toFixed(2)}<br>
       `)
       this.dataTooltip
