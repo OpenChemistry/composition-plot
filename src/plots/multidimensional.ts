@@ -45,6 +45,14 @@ class MultidimensionalPlot {
     this.mapper.setLookupTable(this.lut);
     this.actor.setMapper(this.mapper);
     this.renderer.addActor(this.actor);
+
+    this.resize();
+  }
+
+  resize() {
+    const {width, height} = this.div.getBoundingClientRect();
+    this.viewer.getOpenGLRenderWindow().setSize(width, height);
+    this.renderWindow.render();
   }
 
   setBackground(color: [number, number, number] | string) {
