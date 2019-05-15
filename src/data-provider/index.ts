@@ -33,10 +33,7 @@ export class DataProvider {
     const compositions: {[element:string]: Set<number>} = {};
 
     for (let sample of samples) {
-      const {elements, amounts} = sample.composition;
-
-      elements.forEach((element, i) => {
-        const fraction = amounts[i];
+      Object.entries(sample.composition).forEach(([element, fraction]) => {
         if (!(element in compositions)) {
           compositions[element] = new Set();
         }
@@ -81,7 +78,6 @@ export class DataProvider {
     this.setAxisOrder(Object.keys(this.axes));
     this.samples = samples;
     this.setActiveScalar(this.getDefaultScalar(this.getActiveScalar()));
-    console.log("DATAPROVIDER", this);
   }
 
   setAxisOrder(order: string[]) {
@@ -203,46 +199,27 @@ export class DataProvider {
   }
 
   static getSampleElementFraction(sample: ISample, element: string) : number {
-    const { elements, amounts } = sample.composition;
-    for (let i = 0; i < elements.length; ++i) {
-      if (elements[i] === element) {
-        return amounts[i];
-      }
+    if (element in sample.composition) {
+      return sample.composition[element];
     }
     return 0;
   }
 
   static filterSamples(samples: ISample[], axes: any[]) : ISample[] {
+    let filteredSamples = [...samples];
     for (let axis of axes) {
       if (typeof axis.range === 'function') {
-        samples = samples.filter(sample => {
-          const { elements, amounts } = sample.composition;
-          let fraction = 0;
-          elements.forEach((element, i) => {
-            if (element === axis.element) {
-              fraction = amounts[i];
-            }
-          });
-          return axis.range(fraction, Number.EPSILON);
+        filteredSamples = filteredSamples.filter(sample => {
+          return axis.range(DataProvider.getSampleElementFraction(sample, axis.element), Number.EPSILON);
         });
       } else {
-        samples = samples.filter(sample => {
-          const { elements, amounts } = sample.composition;
-          let fraction = 0;
-          elements.forEach((element, i) => {
-            if (element === axis.element) {
-              fraction = amounts[i];
-            }
-          });
-          if (axis.range[0] - Number.EPSILON < fraction && fraction < axis.range[1] + Number.EPSILON) {
-            return true;
-          } else {
-            return false;
-          }
-        })
+        filteredSamples = filteredSamples.filter(sample => {
+          const fraction = DataProvider.getSampleElementFraction(sample, axis.element);
+          return (axis.range[0] - Number.EPSILON < fraction && fraction < axis.range[1] + Number.EPSILON);
+        });
       }
     }
-    return samples;
+    return filteredSamples;
   }
 
   static isSelected(sample: ISample, selectedKeys: Set<string>) : boolean {

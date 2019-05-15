@@ -26,10 +26,7 @@ export class InfoProvider {
     const scalars: {[scalar:string]: [number, number]} = {};
 
     for (let sample of samples) {
-      const {elements, amounts} = sample.composition;
-
-      elements.forEach((element, i) => {
-        const fraction = amounts[i];
+      Object.entries(sample.composition).forEach(([element, fraction]) => {
         if (!(element in compositions)) {
           compositions[element] = [fraction, fraction];
         }

@@ -115,7 +115,7 @@ export class DataProvider {
         this.scalars.add(fom.name);
       });
 
-      sample.composition.elements.forEach(element => {
+      Object.keys(sample.composition).forEach(element => {
         this.elements.add(element);
       });
 

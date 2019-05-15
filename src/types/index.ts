@@ -2,8 +2,7 @@ export type Vec2 = [number, number];
 export type Vec3 = [number, number, number];
 
 export interface IComposition {
-  elements: string[];
-  amounts: number[];
+  [element: string]: number;
 }
 
 export interface IFom {
