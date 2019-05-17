@@ -4,6 +4,8 @@ export class InfoProvider {
   samples: ISample[] = [];
   scalars: Set<string> = new Set();
   elements: Set<string> = new Set();
+  runs: Set<string> = new Set();
+  analyses: Set<string> = new Set();
   scalarsRange: {[element: string]: [number, number]} = {};
   elementsRange: {[element: string]: [number, number]} = {};
 
@@ -11,6 +13,8 @@ export class InfoProvider {
     this.samples = [];
     this.elements = new Set();
     this.scalars = new Set();
+    this.runs = new Set();
+    this.analyses = new Set();
     this.elementsRange = {};
     this.scalarsRange = {};
 
@@ -22,10 +26,7 @@ export class InfoProvider {
     const scalars: {[scalar:string]: [number, number]} = {};
 
     for (let sample of samples) {
-      const elements = Object.keys(sample.composition);
-
-      for (let element of elements) {
-        let fraction = sample.composition[element];
+      Object.entries(sample.composition).forEach(([element, fraction]) => {
         if (!(element in compositions)) {
           compositions[element] = [fraction, fraction];
         }
@@ -35,21 +36,23 @@ export class InfoProvider {
         } else if (fraction > compositions[element][1]) {
           compositions[element][1] = fraction;
         }
-      }
+      });
 
-      for (let key of Object.keys(sample.scalars)) {
-        let value = sample.scalars[key];
-        if (!(key in scalars)) {
-          scalars[key] = [value, value];
+      sample.fom.forEach((fom) => {
+        const { name, value, runId, analysisId } = fom;
+        if (!(name in scalars)) {
+          scalars[name] = [value, value];
         }
 
-        if (value < scalars[key][0]) {
-          scalars[key][0] = value;
-        } else if (value > scalars[key][1]) {
-          scalars[key][1] = value;
+        if (value < scalars[name][0]) {
+          scalars[name][0] = value;
+        } else if (value > scalars[name][1]) {
+          scalars[name][1] = value;
         }
-        this.scalars.add(key);
-      }
+        this.scalars.add(name);
+        this.runs.add(runId);
+        this.analyses.add(analysisId);
+      });
     }
 
     this.scalarsRange = {...scalars};
@@ -101,11 +104,19 @@ export class InfoProvider {
     }
   }
 
-  static getSampleScalar(sample: ISample, scalar: string) : number {
-    if (scalar in sample.scalars) {
-      return sample.scalars[scalar];
-    } else {
-      return null;
+  static getSampleScalar(sample: ISample, scalar: string, runId?: string, analysisId?: string) : number | null {
+    const matchRunId = !!runId;
+    const matchAnalysisId = !!analysisId;
+
+    for (let fom of sample.fom) {
+      const isMatch = (fom.name === scalar
+                     && (runId == fom.runId || !matchRunId)
+                     && (analysisId == fom.analysisId || !matchAnalysisId));
+      if (isMatch) {
+        return fom.value;
+      }
     }
+
+    return null;
   }
 }

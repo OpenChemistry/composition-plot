@@ -45,6 +45,14 @@ class MultidimensionalPlot {
     this.mapper.setLookupTable(this.lut);
     this.actor.setMapper(this.mapper);
     this.renderer.addActor(this.actor);
+
+    this.resize();
+  }
+
+  resize() {
+    const {width, height} = this.div.getBoundingClientRect();
+    this.viewer.getOpenGLRenderWindow().setSize(width, height);
+    this.renderWindow.render();
   }
 
   setBackground(color: [number, number, number] | string) {
@@ -104,7 +112,7 @@ class MultidimensionalPlot {
       coords[3 * i + 1] = position[1];
       coords[3 * i + 2] = position[2];
       for (let key of scalarKeys) {
-        scalars[key][i] = sample.scalars[key] || 0.0;
+        scalars[key][i] = DataProvider.getSampleScalar(sample, key) || 0.0;
       }
     }
     this.polyData.getPoints().setData(coords);

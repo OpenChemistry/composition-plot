@@ -111,12 +111,14 @@ export class DataProvider {
     }
 
     for (let sample of samples) {
-      for (let key of Object.keys(sample.scalars)) {
-        this.scalars.add(key);
-      }
-      for (let key of Object.keys(sample.composition)) {
-        this.elements.add(key);
-      }
+      sample.fom.forEach(fom => {
+        this.scalars.add(fom.name);
+      });
+
+      Object.keys(sample.composition).forEach(element => {
+        this.elements.add(element);
+      });
+
     }
 
     this.samples = samples;
@@ -176,12 +178,20 @@ export class DataProvider {
     return this.samples.filter(sample => filter(sample));
   }
 
-  static getSampleScalar(sample: ISample, scalar: string) : number {
-    if (scalar in sample.scalars) {
-      return sample.scalars[scalar];
-    } else {
-      return null;
+  static getSampleScalar(sample: ISample, scalar: string, runId?: string, analysisId?: string) : number | null {
+    const matchRunId = !!runId;
+    const matchAnalysisId = !!analysisId;
+
+    for (let fom of sample.fom) {
+      const isMatch = (fom.name === scalar
+                     && (runId == fom.runId || !matchRunId)
+                     && (analysisId == fom.analysisId || !matchAnalysisId));
+      if (isMatch) {
+        return fom.value;
+      }
     }
+
+    return null;
   }
 
   static isSelected(sample: ISample, selectedKeys: Set<string>) : boolean {

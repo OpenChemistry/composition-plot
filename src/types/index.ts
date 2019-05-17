@@ -1,18 +1,24 @@
 export type Vec2 = [number, number];
 export type Vec3 = [number, number, number];
 
-export interface ISample {
-  sampleNum: number;
-  composition: {
-    [element:string]: number;
-  }
-  scalars: {
-    [scalar: string]: number;
-  }
+export interface IComposition {
+  [element: string]: number;
+}
+
+export interface IFom {
   _id: string;
-  platemapId: string;
+  name: string;
+  value: number;
+  analysisId: string;
   runId: string;
-  [prop:string]: any;
+}
+
+export interface ISample {
+  _id: string;
+  sampleNum: number;
+  composition: IComposition;
+  fom: IFom[];
+  // [prop:string]: any;
 }
 
 export interface IAxis {

@@ -33,16 +33,17 @@ export class DataProvider {
     const compositions: {[element:string]: Set<number>} = {};
 
     for (let sample of samples) {
-      const elements = Object.keys(sample.composition);
-      for (let element of elements) {
+      Object.entries(sample.composition).forEach(([element, fraction]) => {
         if (!(element in compositions)) {
           compositions[element] = new Set();
         }
-        compositions[element].add(sample.composition[element]);
-      }
-      for (let key of Object.keys(sample.scalars)) {
-        this.scalars.add(key);
-      }
+        compositions[element].add(fraction);
+      });
+
+      sample.fom.forEach((fom) => {
+        const { name } = fom;
+        this.scalars.add(name);
+      });
     }
 
     const elements = Object.keys(compositions);
@@ -181,33 +182,44 @@ export class DataProvider {
     }
   }
 
-  static getSampleScalar(sample: ISample, scalar: string) : number {
-    if (scalar in sample.scalars) {
-      return sample.scalars[scalar];
-    } else {
-      return null;
+  static getSampleScalar(sample: ISample, scalar: string, runId?: string, analysisId?: string) : number | null {
+    const matchRunId = !!runId;
+    const matchAnalysisId = !!analysisId;
+
+    for (let fom of sample.fom) {
+      const isMatch = (fom.name === scalar
+                     && (runId == fom.runId || !matchRunId)
+                     && (analysisId == fom.analysisId || !matchAnalysisId));
+      if (isMatch) {
+        return fom.value;
+      }
     }
+
+    return null;
+  }
+
+  static getSampleElementFraction(sample: ISample, element: string) : number {
+    if (element in sample.composition) {
+      return sample.composition[element];
+    }
+    return 0;
   }
 
   static filterSamples(samples: ISample[], axes: any[]) : ISample[] {
+    let filteredSamples = [...samples];
     for (let axis of axes) {
       if (typeof axis.range === 'function') {
-        samples = samples.filter(sample => {
-          const fraction = axis.element in sample.composition ? sample.composition[axis.element] : 0;
-          return axis.range(fraction, Number.EPSILON);
+        filteredSamples = filteredSamples.filter(sample => {
+          return axis.range(DataProvider.getSampleElementFraction(sample, axis.element), Number.EPSILON);
         });
       } else {
-        samples = samples.filter(sample => {
-          const fraction = axis.element in sample.composition ? sample.composition[axis.element] : 0;
-          if (axis.range[0] - Number.EPSILON < fraction && fraction < axis.range[1] + Number.EPSILON) {
-            return true;
-          } else {
-            return false;
-          }
-        })
+        filteredSamples = filteredSamples.filter(sample => {
+          const fraction = DataProvider.getSampleElementFraction(sample, axis.element);
+          return (axis.range[0] - Number.EPSILON < fraction && fraction < axis.range[1] + Number.EPSILON);
+        });
       }
     }
-    return samples;
+    return filteredSamples;
   }
 
   static isSelected(sample: ISample, selectedKeys: Set<string>) : boolean {
