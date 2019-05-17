@@ -95,6 +95,14 @@ class QuaternaryPlot {
     this.render();
   }
 
+  setOpacityFn(opacityFn: (sample: ISample) => number) {
+    const fn = (plot: TernaryPlot) => {
+      plot.setOpacityFn(opacityFn);
+    }
+    this.broadCast(fn);
+    this.render();
+  }
+
   render() {
     const fn = (plot: TernaryPlot) => {
       plot.render();
