@@ -22,6 +22,7 @@ class TernaryPlot {
   colorMap: [number, number, number][];
   colorMapRange: [number, number] = [0, 1];
   selectedSamples: Set<string> = new Set();
+  opacityFn: (sample: ISample) => number = () => 1;
 
   spacing: number[];
   range: number[][];
@@ -105,6 +106,10 @@ class TernaryPlot {
       this.vertices[2] = [left + base / 2, (h - height) / 2];
     }
     this.render();
+  }
+
+  setOpacityFn(opacityFn: (sample: ISample) => number) {
+    this.opacityFn = opacityFn;
   }
 
   render() {
@@ -248,7 +253,7 @@ class TernaryPlot {
         this.colorMap,
         this.colorMapRange
       );
-      return `rgb(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255})`
+      return `rgba(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255}, ${this.opacityFn(this.dp.samples[i])})`
     }
 
     const onMouseOver = (d, i) => {
