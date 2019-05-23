@@ -1,4 +1,4 @@
-import { ISample, IAxis, ISegment } from '../types';
+import { ISample, IAxis, ISegment, IFom } from '../types';
 import { IDataProvider as ISpectrumProvider } from './spectrum';
 
 export class DataProvider {
@@ -182,7 +182,7 @@ export class DataProvider {
     }
   }
 
-  static getSampleScalar(sample: ISample, scalar: string, runId?: string, analysisId?: string) : number | null {
+  static getSampleFom(sample: ISample, scalar: string, runId?: string, analysisId?: string) : IFom | null {
     const matchRunId = !!runId;
     const matchAnalysisId = !!analysisId;
 
@@ -191,11 +191,16 @@ export class DataProvider {
                      && (runId == fom.runId || !matchRunId)
                      && (analysisId == fom.analysisId || !matchAnalysisId));
       if (isMatch) {
-        return fom.value;
+        return fom;
       }
     }
 
     return null;
+  }
+
+  static getSampleScalar(sample: ISample, scalar: string, runId?: string, analysisId?: string) : number | null {
+    const fom = DataProvider.getSampleFom(sample, scalar, runId, analysisId);
+    return fom ? fom.value : null;
   }
 
   static getSampleElementFraction(sample: ISample, element: string) : number {
