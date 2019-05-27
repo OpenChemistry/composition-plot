@@ -2,6 +2,7 @@ import { DataProvider, NearestCompositionToPositionProvider } from '../data-prov
 
 import 'vtk.js';
 import { hexTorgb } from '../utils/colors';
+import { ISample } from '../types';
 declare const vtk: any;
 
 function makeCamera() {
@@ -20,6 +21,7 @@ class MultidimensionalPlot {
   actor;
   lut;
   labelWidgets = [];
+  radiusFn: (sample: ISample) => number = () => 1.5;
 
   constructor(
     div: HTMLElement, dp: DataProvider, compositionToPosition: NearestCompositionToPositionProvider
@@ -41,7 +43,7 @@ class MultidimensionalPlot {
 
     this.mapper.setUseLookupTableScalarRange(true);
     this.mapper.setInputData(this.polyData);
-    this.mapper.setRadius(1.5);
+    this.mapper.setScaleArray('sizes');
     this.mapper.setLookupTable(this.lut);
     this.actor.setMapper(this.mapper);
     this.renderer.addActor(this.actor);
@@ -62,6 +64,11 @@ class MultidimensionalPlot {
       this.viewer.setBackground(...hexTorgb(color.replace('#', '')));
     }
     this.renderWindow.render();
+  }
+
+  setRadiusFn(radiusFn: (sample: ISample) => number) {
+    this.radiusFn = radiusFn;
+    this.updateSizesArray();
   }
 
   setCamera(camera, resetCamera = false, watchModified = false) {
@@ -125,8 +132,24 @@ class MultidimensionalPlot {
     this.addLabels();
 
     this.polyData.getPointData().setActiveScalars(this.dp.getActiveScalar());
+    this.updateSizesArray();
     this.polyData.modified();
     this.renderer.resetCamera();
+    this.renderWindow.render();
+  }
+
+  private updateSizesArray() {
+    const samples = this.dp.getSamples();
+    const nSamples = samples.length;
+    const sizes = new Float32Array(nSamples);
+    for (let i = 0; i < nSamples; ++i) {
+      let sample = samples[i];
+      sizes[i] = this.radiusFn(sample);
+    }
+    this.polyData.getPointData().addArray(
+      vtk.Common.Core.vtkDataArray.newInstance({name: 'sizes', values: sizes})
+    );
+    this.polyData.modified();
     this.renderWindow.render();
   }
 
