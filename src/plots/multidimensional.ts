@@ -1,4 +1,4 @@
-import { DataProvider, NearestCompositionToPositionProvider } from '../data-provider/multidimensional';
+import { DataProvider, ICompositionToPositionProvider } from '../data-provider/multidimensional';
 
 import 'vtk.js';
 import { hexTorgb } from '../utils/colors';
@@ -12,7 +12,8 @@ function makeCamera() {
 class MultidimensionalPlot {
   div: HTMLElement;
   dp: DataProvider;
-  compositionToPosition: NearestCompositionToPositionProvider;
+  compositionToPosition: ICompositionToPositionProvider;
+  compositionSpace: string[] | undefined;
   viewer;
   polyData;
   renderer;
@@ -24,7 +25,7 @@ class MultidimensionalPlot {
   radiusFn: (sample: ISample) => number = () => 1.5;
 
   constructor(
-    div: HTMLElement, dp: DataProvider, compositionToPosition: NearestCompositionToPositionProvider
+    div: HTMLElement, dp: DataProvider, compositionToPosition: ICompositionToPositionProvider
   ) {
     this.div = div;
     this.dp = dp;
@@ -87,12 +88,34 @@ class MultidimensionalPlot {
     this.renderWindow.render();
   }
 
+  setCompositionSpace(compositionSpace: string[]) {
+    this.compositionSpace = compositionSpace;
+  }
+
+  setCompositionToPosition(compositionToPosition: ICompositionToPositionProvider) {
+    this.compositionToPosition = compositionToPosition;
+  }
+
   getCamera() {
     return this.renderer.getActiveCamera();
   }
 
   dataUpdated() {
-    const samples = this.dp.getSamples();
+    let filter: (sample: ISample) => boolean;
+    if (this.compositionSpace) {
+      const compositionSet = new Set(this.compositionSpace);
+      filter = (sample: ISample) : boolean => {
+        for (let [element, fraction] of Object.entries(sample.composition)) {
+          if (!compositionSet.has(element) && fraction > Number.EPSILON) {
+            return false;
+          }
+        }
+        return true;
+      }
+    } else {
+      filter = () => true;
+    }
+    const samples = this.dp.getSamples(filter);
     const nSamples = samples.length;
     const coords = new Float32Array(3 * nSamples);
     const scalars = {};
@@ -101,14 +124,16 @@ class MultidimensionalPlot {
       scalars[key] = new Float32Array(nSamples);
     }
 
-    let elements = this.dp.getElements();
+    let elements: string[] = this.compositionSpace ? [...this.compositionSpace] : this.dp.getElements();
+
     if (elements.length < this.compositionToPosition.getDimensions()) {
       let extra = this.compositionToPosition.getDimensions() - elements.length;
       for (let i = 0; i < extra; ++i ) {
         elements.push('');
       }
     } else if (elements.length > this.compositionToPosition.getDimensions()) {
-      throw new Error(`The composition space ${elements} is larger than 8`);
+      return;
+      // throw new Error(`The composition space ${elements} is larger than 8`);
     }
 
     for (let i = 0; i < nSamples; ++i) {
@@ -155,7 +180,7 @@ class MultidimensionalPlot {
 
   addLabels() {
     this.removeLabels();
-    const elements = this.dp.getElements();
+    const elements = this.compositionSpace || this.dp.getElements();
     const composition = new Array(elements.length);
     for (let i = 0; i < elements.length; ++i) {
       for (let j = 0; j < this.compositionToPosition.getDimensions(); ++j) {
