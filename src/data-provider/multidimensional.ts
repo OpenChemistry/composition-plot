@@ -173,8 +173,8 @@ export class DataProvider {
     this.filter = filter;
   }
 
-  getSamples() : ISample[] {
-    const filter = this.filter;
+  getSamples(sampleFilter: (sample: ISample) => boolean | undefined = undefined) : ISample[] {
+    const filter = sampleFilter || this.filter;
     return this.samples.filter(sample => filter(sample));
   }
 
