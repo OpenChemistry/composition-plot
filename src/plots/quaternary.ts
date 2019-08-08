@@ -1,6 +1,6 @@
 import { ISample, IAxis } from '../types';
 import { TernaryPlot } from './ternary';
-import { redWhiteBlue } from '../utils/colors';
+import { bwr } from '../utils/colors/presets';
 import { DataProvider } from '../data-provider';
 
 class QuaternaryPlot {
@@ -54,7 +54,7 @@ class QuaternaryPlot {
 
   setColorMap(map: [number, number, number][], range: [number, number] = null) {
     if (!map) {
-      map = redWhiteBlue;
+      map = bwr;
     }
     if (!range) {
       range = this.dp.getScalarRange(this.selectedScalar);

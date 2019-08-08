@@ -13,6 +13,7 @@
     "prepare": "npm run build"
   },
   "dependencies": {
+    "@colormap/core": "^0.1.0-3",
     "@openchemistry/utils": "^0.6.4",
     "d3-array": "^1.2.4",
     "d3-axis": "^1.0.12",
