@@ -53,7 +53,22 @@ export class DataProvider {
       compositions[element].forEach(val => {values.push(val)});
       values.sort((a,b) => a < b ? -1 : a > b ? 1 : 0);
       const range: [number, number] = [values[0], values[values.length -1]];
-      const spacing: number = values.length > 1 ? values[1] - values[0] : 0;
+
+      let spacing = 0;
+      if (values.length > 1) {
+        // Calculate the spacings between the values
+        const spacings = values.reduce((acc, _, i) => {
+          if (i != values.length-1) {
+            acc.push(values[i+1]-values[i]);
+          }
+          return acc;
+        }, []);
+
+        // Sort them and pick the middle
+        spacings.sort((a, b) => a - b);
+        spacing = spacings[Math.floor(spacings.length/2)];
+      }
+
       this.axes[element] = {
         element,
         spacing,
