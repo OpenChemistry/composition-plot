@@ -67,6 +67,8 @@ export class DataProvider {
         // Sort them and pick the middle
         spacings.sort((a, b) => a - b);
         spacing = spacings[Math.floor(spacings.length/2)];
+        // Clamp the spacing
+        spacing = 1/Math.round(1/spacing);
       }
 
       this.axes[element] = {
