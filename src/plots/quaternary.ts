@@ -2,53 +2,95 @@ import { ISample, IAxis } from '../types';
 import { TernaryPlot } from './ternary';
 import { bwr } from '../utils/colors/presets';
 import { DataProvider } from '../data-provider';
+import { select } from 'd3-selection';
 
 class QuaternaryPlot {
   svg: HTMLElement;
   dp: DataProvider;
   selectedScalar: string;
   scalarIdx: number;
-  edgeUnit: number = 250;
+  edgeUnit: number;
   colorMap: [number, number, number][];
   colorMapRange: [number, number];
   shells: TernaryPlot[][] = [];
+  nShells: number = 0;
   selectedSamples: Set<string>;
+  onSelect: Function = () => {};
+  onDeselect: Function = () => {};
 
-  constructor(svg: HTMLElement, dp: DataProvider) {
+  constructor(svg: HTMLElement, dp: DataProvider, edgeUnit: number = 250) {
     this.svg = svg;
     this.dp = dp;
-    this.initShells();
+    this.edgeUnit = edgeUnit;
   }
 
-  initShells() {
-    // Initialize 3 shells, 4 ternary plots per shell
-    const nShells = 3;
+  initShells(spacing: number) {
+    // Initialize 4 ternary plots per shell
+    const nShells = Math.floor(1 / (3 * spacing));
+    if (nShells === this.nShells) {
+      return;
+    }
+    this.nShells = nShells;
     const nPlots = 4;
     this.shells = [];
 
-    let start = 50;
-    const spacing = 0.1;
+    const margin = 50;
+    let startX = 0;
+    let rowStartY = 0;
+    let rowHeight = Math.round(this.edgeUnit * Math.sin(2 * Math.PI / 6));
+    const maxWidth = 1200;
+
+    let sizeX = 0;
+    let sizeY = rowHeight;
+
+    select(this.svg).selectAll().remove();
 
     for (let i = 0; i < nShells; ++i) {
       let constValue = i * spacing;
-      let edge = Math.floor(this.edgeUnit * (1 - constValue * 4));
+      let edge = Math.round(this.edgeUnit * (1 - constValue * 4));
+      if (edge <= 0) {
+        continue;
+      }
+
       let plots: TernaryPlot[] = [];
+      const shellWidth = 2.5 * edge;
+      const shellHeight = Math.round(edge * Math.sin(2 * Math.PI / 6));
+      if (startX + shellWidth > maxWidth) {
+        startX = 0;
+        rowStartY += rowHeight + 2 * margin;
+        rowHeight = shellHeight;
+        sizeY += 2 * margin + rowHeight;
+      }
+
+      sizeX = Math.max(sizeX, startX + shellWidth);
+
+      let startY = margin + rowStartY + Math.floor(0.5 * (rowHeight - shellHeight));
 
       for (let j = 0; j < nPlots; ++j) {
         const dp = new DataProvider(3);
-        const plot = new TernaryPlot(this.svg, dp, `lulzi${i}`, j % 2 !== 0);
-        let left = start + j * (edge / 2);
-        let right = left + edge;
-        plot.setSize(left, right);
+        const plot = new TernaryPlot(this.svg, dp, `face${i}-${j}`, j % 2 !== 0);
+        let left = margin + startX + j * (edge / 2);
+        plot.setPosition(left, startY, edge);
         plots.push(plot);
       }
-      start += 2 * edge + 0.2 * this.edgeUnit;
+
+      startX += 2 * edge + 2 * spacing * this.edgeUnit;
       this.shells.push(plots);
     }
+
+    sizeX += 2 * margin;
+    sizeY += 2 * margin;
+
+    this.svg.setAttribute('width', sizeX.toString());
+    this.svg.setAttribute('height', sizeY.toString());
+
+    this.setCallBacks(this.onSelect, this.onDeselect);
   }
 
   dataUpdated() {
-    this.setShellsData();
+    const spacing = this.dp.getAxis(0).spacing;
+    this.initShells(spacing);
+    this.setShellsData(spacing);
     this.render();
   }
 
@@ -69,9 +111,7 @@ class QuaternaryPlot {
     this.broadCast(fn);
   }
 
-  setShellsData() {
-
-    const spacing = 0.1;
+  setShellsData(spacing: number) {
     for (let i = 0; i < this.shells.length; ++i) {
       let constValue = i * spacing;
       this._setShellData(this.shells[i], constValue);
@@ -79,6 +119,9 @@ class QuaternaryPlot {
   }
 
   setCallBacks(onSelect: Function, onDeselect: Function) {
+    this.onSelect = onSelect;
+    this.onDeselect = onDeselect;
+
     const fn = (plot: TernaryPlot) => {
       plot.onSelect = onSelect;
       plot.onDeselect = onDeselect;
