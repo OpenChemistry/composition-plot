@@ -43,6 +43,7 @@ class TernaryPlot {
       [0, 0]
     ];
 
+    select(svg).selectAll(`.${name}`).remove();
     this.rootGroup = select(svg)
       .append('g')
       .classed(`${name}`, true);
@@ -83,6 +84,24 @@ class TernaryPlot {
     );
     // dragging randomly gets in the way
     this.svg.addEventListener('dragstart', (e) => {e.preventDefault()});
+  }
+
+  setPosition(x0: number, y0: number, length: number) {
+    // In an svg there can be several ternary plots,
+    const height = Math.round(length * Math.sin(2 * Math.PI / 6));
+
+    this.edge = length;
+
+    if (this.upsideDown) {
+      this.vertices[0] = [x0, y0];
+      this.vertices[1] = [x0 + length, y0];
+      this.vertices[2] = [x0 + length / 2, y0 + height];
+    } else {
+      this.vertices[0] = [x0, y0 + height];
+      this.vertices[1] = [x0 + length, y0 + height];
+      this.vertices[2] = [x0 + length / 2, y0];
+    }
+    this.render();
   }
 
   setSize(left: number, right: number) {
@@ -146,6 +165,8 @@ class TernaryPlot {
 
     this.gridGroup.selectAll('text').remove();
 
+    const fontSize = 16;
+
     let labels = this.gridGroup
       .selectAll('text')
       .data(this.vertices);
@@ -159,14 +180,14 @@ class TernaryPlot {
           (this.upsideDown && (i !== 2)) ||
           (!this.upsideDown && i === 2)
         ) {
-          return d[1] - 24;
+          return d[1] - fontSize;
         } else {
-          return d[1] + 48;
+          return d[1] + 2 * fontSize;
         }
       })
       .attr('text-anchor', 'middle')
       .attr('font-family', 'sans-serif')
-      .attr('font-size', '1.5rem')
+      .attr('font-size', `${fontSize}px`)
       .text((d, i) => {d; return this.dp.getAxisLabel(i)});
 
     this.gridGroup.selectAll('path').remove();
