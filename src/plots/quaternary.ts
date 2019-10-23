@@ -111,6 +111,13 @@ class QuaternaryPlot {
     this.broadCast(fn);
   }
 
+  setInverted(inverted: boolean) {
+    const fn = (plot: TernaryPlot) => {
+      plot.setInverted(inverted);
+    }
+    this.broadCast(fn);
+  }
+
   setShellsData(spacing: number) {
     for (let i = 0; i < this.shells.length; ++i) {
       let constValue = i * spacing;

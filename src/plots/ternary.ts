@@ -1,8 +1,9 @@
 import { Selection, BaseType, select } from 'd3-selection';
 import { line, curveLinearClosed } from 'd3-shape';
 
+import { ColorMap, RGBColor, createColorMap, linearScale } from '@colormap/core';
+
 import { IAxis, ISample } from '../types';
-import { scalarToColor } from '../utils/colors';
 import { ScaleLinear, scaleLinear } from 'd3-scale';
 import { DataProvider } from '../data-provider';
 
@@ -19,8 +20,10 @@ class TernaryPlot {
   dataTooltip: Selection<BaseType, {}, null, undefined>;
   scales: ScaleLinear<number, number>[];
   edge: number;
-  colorMap: [number, number, number][];
-  colorMapRange: [number, number] = [0, 1];
+  colors: RGBColor[] = [[0.5, 0.5, 0.5]];
+  dataRange: [number, number] = [0, 1];
+  colorMap: ColorMap = () => ([0.5, 0.5, 0.5]);
+  inverted: boolean = false;
   selectedSamples: Set<string> = new Set();
   opacityFn: (sample: ISample) => number = () => 1;
 
@@ -264,15 +267,9 @@ class TernaryPlot {
       .y((d) => d[1])
       .curve(curveLinearClosed);
 
-    const fillFn = (d, i) => {
-      if (! this.colorMap) {
-        return 'rgba(0, 0, 0, 0.2';
-      }
-      d;
-      let color = scalarToColor(
-        DataProvider.getSampleScalar(this.dp.samples[i], this.dp.getActiveScalar()),
-        this.colorMap,
-        this.colorMapRange
+    const fillFn = (_d, i) => {
+      let color = this.colorMap(
+        DataProvider.getSampleScalar(this.dp.samples[i], this.dp.getActiveScalar())
       );
       return `rgba(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255}, ${this.opacityFn(this.dp.samples[i])})`
     }
@@ -363,10 +360,25 @@ class TernaryPlot {
       .remove();
   }
 
-  setColorMap(map: [number, number, number][], range: [number, number]) {
-    this.colorMap = map;
-    this.colorMapRange = range;
+  setColorMap(colors: RGBColor[], range: [number, number]) {
+    this.colors = colors;
+    this.dataRange = range;
+    let mapRange : [number, number];
+
+    if (this.inverted) {
+      mapRange = [1, 0];
+    } else {
+      mapRange = [0, 1];
+    }
+
+    const scale = linearScale(this.dataRange, mapRange);
+    this.colorMap = createColorMap(this.colors, scale);
     this.drawData();
+  }
+
+  setInverted(inverted: boolean) {
+    this.inverted = inverted;
+    this.setColorMap(this.colors, this.dataRange);
   }
 
   setSelectedSamples(selectedSamples: Set<string>) {

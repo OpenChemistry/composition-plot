@@ -7,6 +7,7 @@ export class ColorMapLegend {
   colors: Vec3[];
   direction: 'horizontal' | 'vertical';
   digits: number;
+  inverted: boolean;
   image: HTMLImageElement;
   canvas: HTMLCanvasElement;
   context: CanvasRenderingContext2D;
@@ -21,6 +22,7 @@ export class ColorMapLegend {
     this.nPoints = 128;
     this.direction = 'vertical';
     this.digits = 1;
+    this.inverted = false;
     this.wrapper = document.createElement('div');
     this.wrapper.style.width = '100%';
     this.wrapper.style.height = '100%';
@@ -74,6 +76,10 @@ export class ColorMapLegend {
     this.digits = digits;
   }
 
+  setInverted(inverted: boolean) {
+    this.inverted = inverted;
+  }
+
   draw() {
     this.drawMap();
     this.drawTicks();
@@ -81,10 +87,18 @@ export class ColorMapLegend {
 
   private drawMap() {
     let scale: Scale;
-    if (this.direction === 'horizontal') {
-      scale = linearScale([0, this.nPoints -1], [0, 1]);
+    if (this.inverted) {
+      if (this.direction === 'horizontal') {
+        scale = linearScale([0, this.nPoints -1], [1, 0]);
+      } else {
+        scale = linearScale([0, this.nPoints -1], [0, 1]);
+      }
     } else {
-      scale = linearScale([0, this.nPoints -1], [1, 0]);
+      if (this.direction === 'horizontal') {
+        scale = linearScale([0, this.nPoints -1], [0, 1]);
+      } else {
+        scale = linearScale([0, this.nPoints -1], [1, 0]);
+      }
     }
     
     const colorMap = createColorMap(this.colors, scale);
