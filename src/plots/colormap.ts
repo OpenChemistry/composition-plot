@@ -6,6 +6,7 @@ export class ColorMapLegend {
   range: Vec2;
   colors: Vec3[];
   direction: 'horizontal' | 'vertical';
+  digits: number;
   image: HTMLImageElement;
   canvas: HTMLCanvasElement;
   context: CanvasRenderingContext2D;
@@ -19,6 +20,7 @@ export class ColorMapLegend {
     this.colors = [[0, 0, 0], [1, 1, 1]];
     this.nPoints = 128;
     this.direction = 'vertical';
+    this.digits = 1;
     this.wrapper = document.createElement('div');
     this.wrapper.style.width = '100%';
     this.wrapper.style.height = '100%';
@@ -66,6 +68,10 @@ export class ColorMapLegend {
       this.container.style.paddingBottom = `${0.5 * this.fontSize}rem`;
       this.imageData = new ImageData(1, this.nPoints);
     }
+  }
+
+  setDigits(digits: number) {
+    this.digits = digits;
   }
 
   draw() {
@@ -119,7 +125,7 @@ export class ColorMapLegend {
         transform = 'translateY(50%)';
       }
       selection
-        .text((d: number) => d.toFixed(1))
+        .text((d: number) => d.toFixed(this.digits))
         .style('position', 'absolute')
         .style('font-size', `${this.fontSize}rem`)
         .style('bottom', bottom)
