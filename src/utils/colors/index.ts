@@ -2,36 +2,6 @@ import * as presets from './presets';
 
 export { presets };
 
-export function scalarToColor(
-  scalar: number,
-  colorMap: [number, number, number][],
-  colorMapRange: [number, number]
-) {
-  // console.log("SCALAR TO COLOR", scalar, colorMap, colorMapRange);
-  let indexFloat = (colorMap.length - 1) * (scalar - colorMapRange[0]) / (colorMapRange[1] - colorMapRange[0]);
-  if (indexFloat <= 0) {
-    return colorMap[0];
-  } else if (indexFloat >= colorMap.length - 1) {
-    return colorMap[colorMap.length - 1];
-  }
-
-  let index = Math.floor(indexFloat);
-  let delta = indexFloat - index;
-
-  let color = [
-    (1 - delta) * colorMap[index][0] + delta * colorMap[index + 1][0],
-    (1 - delta) * colorMap[index][1] + delta * colorMap[index + 1][1],
-    (1 - delta) * colorMap[index][2] + delta * colorMap[index + 1][2],
-  ]
-  return color;
-}
-
-// const lineColors: [number, number, number][] = [
-  // [1, 0, 0],
-  // [0, 1, 0],
-  // [0, 0, 1]
-// ]
-
 export function* getLineColor() {
   let i = 0;
   while(true) {

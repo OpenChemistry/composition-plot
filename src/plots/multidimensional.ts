@@ -1,8 +1,10 @@
+import { linearScale, RGBColor } from '@colormap/core';
+
 import { DataProvider, ICompositionToPositionProvider } from '../data-provider/multidimensional';
 
 import 'vtk.js';
 import { hexTorgb } from '../utils/colors';
-import { ISample } from '../types';
+import { ISample, Vec2 } from '../types';
 declare const vtk: any;
 
 function makeCamera() {
@@ -12,8 +14,11 @@ function makeCamera() {
 class MultidimensionalPlot {
   div: HTMLElement;
   dp: DataProvider;
+  range: Vec2;
+  colors: RGBColor[];
   compositionToPosition: ICompositionToPositionProvider;
   compositionSpace: string[] | undefined;
+  inverted: boolean;
   viewer;
   polyData;
   renderer;
@@ -30,6 +35,9 @@ class MultidimensionalPlot {
     this.div = div;
     this.dp = dp;
     this.compositionToPosition = compositionToPosition;
+    this.range = [0, 1];
+    this.colors = [[0, 0, 0], [1, 1, 1]];
+    this.inverted = false;
 
     this.viewer = vtk.Rendering.Misc.vtkGenericRenderWindow.newInstance();
     this.viewer.setBackground(0.9, 0.9, 0.9);
@@ -58,7 +66,7 @@ class MultidimensionalPlot {
     this.renderWindow.render();
   }
 
-  setBackground(color: [number, number, number] | string) {
+  setBackground(color: RGBColor | string) {
     if (Array.isArray(color)) {
       this.viewer.setBackground(...color);
     } else {
@@ -211,14 +219,30 @@ class MultidimensionalPlot {
     this.renderWindow.render();
   }
 
-  setColorMap(map: [number, number, number][], range: [number, number]) {
+  setColorMap(map: RGBColor[], range: Vec2) {
     this.lut.removeAllPoints();
-    const delta = range[1] - range[0];
+    this.range = range;
+    this.colors = map;
+
+    let mapRange: Vec2;
+    if (this.inverted) {
+      mapRange = [range[1], range[0]];
+    } else {
+      mapRange = [range[0], range[1]];
+    }
+
+    let scale = linearScale([0, map.length], mapRange);
+
     for (let i = 0; i < map.length; ++i) {
-      let x = range[0] + i * delta / (map.length - 1);
+      let x = scale(i);
       this.lut.addRGBPoint(x, ...map[i]);
     }
     this.renderWindow.render();
+  }
+
+  setInverted(inverted: boolean) {
+    this.inverted = inverted;
+    this.setColorMap(this.colors, this.range);
   }
 }
 
