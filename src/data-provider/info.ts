@@ -104,6 +104,10 @@ export class InfoProvider {
     }
   }
 
+  getSamples() : ISample[] {
+    return this.samples;
+  }
+
   static getSampleScalar(sample: ISample, scalar: string, runId?: string, analysisId?: string) : number | null {
     const matchRunId = !!runId;
     const matchAnalysisId = !!analysisId;

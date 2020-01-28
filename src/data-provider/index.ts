@@ -78,7 +78,7 @@ export class DataProvider {
 
     for (let element of elements) {
       const axis = this.axes[element];
-      if (discardAxes && Math.abs(axis.spacing) < Number.EPSILON) {
+      if (discardAxes && axis.range[0] < Number.EPSILON && Math.abs(axis.spacing) < Number.EPSILON) {
         delete this.axes[element];
       }
     }
@@ -95,6 +95,10 @@ export class DataProvider {
     this.setActiveScalar(this.getDefaultScalar(this.getActiveScalar()));
   }
 
+  getSamples() : ISample[] {
+    return this.samples;
+  }
+
   setAxisOrder(order: string[]) {
     this.axisToIdx = {};
     for (let i = 0; i < order.length; ++i) {
@@ -105,7 +109,7 @@ export class DataProvider {
   }
 
   slice(axes: IAxis[]) : ISample[] {
-    return DataProvider.filterSamples(this.samples, axes);
+    return DataProvider.filterSamples(this.getSamples(), axes);
   }
 
   getDefaultScalar(key: string = null) : string {
@@ -175,7 +179,7 @@ export class DataProvider {
   }
 
   getScalarRange(key: string) : [number, number] {
-    const values: number[] = this.samples.map(sample => DataProvider.getSampleScalar(sample, key));
+    const values: number[] = this.getSamples().map(sample => DataProvider.getSampleScalar(sample, key));
     return [Math.min(...values), Math.max(...values)];
   }
 
