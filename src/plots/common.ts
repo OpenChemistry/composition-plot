@@ -312,6 +312,8 @@ class BasePlot {
       .attr('text-anchor', 'middle')
       .attr('font-family', 'sans-serif')
       .attr('font-size', `${fontSize}px`)
+      .style('user-select', 'none')
+      .style('pointer-events',  'none')
       .text((_d, i) => this.dp.getAxisLabel(i));
 
   }
