@@ -11,7 +11,7 @@ export enum PlotTypes {
   BinaryHorizontal,
   BinaryVertical,
   TernaryUp,
-  TernaryDown  
+  TernaryDown
 }
 
 export interface IVertex {
@@ -265,7 +265,7 @@ class BasePlot {
       .attr('cx', (d) => {return d.position[0]})
       .attr('cy', (d) => {return d.position[1]})
       .attr('r', 3)
-        
+
 
     // Enter
     circles
@@ -281,7 +281,7 @@ class BasePlot {
       .x((d) => d[0])
       .y((d) => d[1])
       .curve(curveLinearClosed)
-    
+
     this.gridGroup
       .append('path')
         .datum(vertices.map(v => v.position))
@@ -524,7 +524,7 @@ class QuaternaryShellPlot {
     const nShells = Math.min(finalShell - initialShell + 1, Math.floor(1 / (3 * spacing)));
 
     const nPlots = 4;
-    
+
     let startX = origin[0];
     let rowStartY = origin[1];
     let rowHeight = 0;// Math.round(edgeUnit * Math.sin(2 * Math.PI / 6));
