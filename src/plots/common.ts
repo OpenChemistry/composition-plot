@@ -1,4 +1,4 @@
-import { Selection, BaseType, select } from 'd3-selection';
+import { Selection, BaseType, select, event as currentEvent } from 'd3-selection';
 import { line, curveLinearClosed } from 'd3-shape';
 
 import { RGBColor, Scale } from '@colormap/core';
@@ -163,7 +163,7 @@ class BasePlot {
   rootGroup: Selection<BaseType, {}, null, undefined>;
   gridGroup: Selection<BaseType, {}, null, undefined>;
   dataGroup: Selection<BaseType, {}, null, undefined>;
-  dataTooltip: Selection<BaseType, {}, null, undefined>;
+  dataTooltip: Selection<BaseType, unknown, HTMLElement, unknown>;
   selectedSamples: Set<string> = new Set();
 
   colorFn: (sample: ISample, dp: DataProvider) => RGBColor = () => [0.5, 0.5, 0.5];
@@ -176,6 +176,7 @@ class BasePlot {
   hexRadius: number = 10;
   spacing: number[];
   range: number[][];
+  enableTooltip: boolean = true;
 
   onSelect: (sample: ISample) => void;
   onDeselect: (sample: ISample) => void;
@@ -201,11 +202,14 @@ class BasePlot {
       .classed('grid', true)
       .style('pointer-events', 'none');
 
-    this.dataTooltip = select(this.svg.parentElement)
+    select(this.svg.parentElement).selectAll('.tooltip')
+      .data([1])
+      .enter()
       .append("div")
-      .attr("class", "tooltip")
-      .style("opacity", 0)
-      .style('position', 'absolute')
+      .attr('class', 'tooltip')
+      .style('opacity', 0.9)
+      .style('display', 'none')
+      .style('position', 'fixed')
       .style('text-align', 'center')
       .style('background-color', 'lightsteelblue')
       .style('border-radius', '0.5rem')
@@ -213,6 +217,8 @@ class BasePlot {
       .style('padding', '0.5rem')
       .style('font-family', 'sans-serif')
       .style('font-size', 'small');
+
+    this.dataTooltip = select(this.svg.parentElement).selectAll('.tooltip');
 
     this.svg.addEventListener(
       'mousedown', () => {
@@ -344,7 +350,7 @@ class BasePlot {
       return `rgba(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255}, ${opacity})`
     }
 
-    const onMouseOver = (d, i) => {
+    const onMouseOver = (_d, i, _hexagons) => {
       if (this.mouseDown) {
         if (DataProvider.isSelected(this.dp.getSamples()[i], this.selectedSamples)) {
           if (this.onDeselect) {
@@ -356,28 +362,35 @@ class BasePlot {
           }
         }
       }
-      // d is the datum, i is the index in the data
-      let [x, y] = d[0];
 
-      let tooltipHtml = "";
-      Object.entries(this.dp.getSamples()[i].composition).forEach(([el, frac]) => {
-        if (frac > Number.EPSILON) {
-          tooltipHtml += `${this.dp.getAxisLabel(el)}: ${frac.toFixed(2)}<br>`;
+      if (this.enableTooltip && !this.mouseDown) {
+        const x = currentEvent.clientX;
+        const y = currentEvent.clientY;
+        let tooltipHtml = "";
+        Object.entries(this.dp.getSamples()[i].composition).forEach(([el, frac]) => {
+          if (frac > Number.EPSILON) {
+            tooltipHtml += `${this.dp.getAxisLabel(el)}: ${frac.toFixed(2)}<br>`;
+          }
+        });
+
+        const activeScalar = this.dp.getActiveScalar();
+        const scalarValue = DataProvider.getSampleScalar(this.dp.getSamples()[i], activeScalar);
+        if (Number.isFinite(scalarValue)) {
+          tooltipHtml += `${activeScalar.replace('\\u002', '.')}: ${scalarValue.toFixed(2)}<br>`;
         }
-      });
-      tooltipHtml += `${this.dp.getActiveScalar().replace('\\u002', '.')}: ${DataProvider.getSampleScalar(this.dp.getSamples()[i], this.dp.getActiveScalar()).toFixed(2)}<br>`;
 
-      this.dataTooltip.html(tooltipHtml);
-      this.dataTooltip
-        .style('opacity', 0.9)
-        .style('left', `${x+10}px`)
-        .style('top', `${y-10}px`)
-        .style('transform', `translateY(-100%)`);
+        this.dataTooltip.html(tooltipHtml);
+        this.dataTooltip
+          .style('left', `${x+10}px`)
+          .style('top', `${y-10}px`)
+          .style('transform', `translateY(-100%)`)
+          .style('display', 'block');
+      }
     }
 
     const onMouseOut = () => {
       this.dataTooltip
-        .style('opacity', 0);
+      .style('display', 'none');
     }
 
     const onMouseDown = (d, i) => {
@@ -408,7 +421,7 @@ class BasePlot {
         .attr('stroke-width', (_d, i) => {
           return DataProvider.isSelected(this.dp.getSamples()[i], this.selectedSamples) ? this.selectedOutlineWidth : 0;
         })
-        .on('mouseover', onMouseOver)
+        .on('mouseenter', onMouseOver)
         .on('mouseout', onMouseOut)
         .on('mousedown', onMouseDown);
 
@@ -420,7 +433,7 @@ class BasePlot {
       .attr('stroke-width', (_d, i) => {
         return DataProvider.isSelected(this.dp.getSamples()[i], this.selectedSamples) ? this.selectedOutlineWidth : 0;
       })
-      .on('mouseover', onMouseOver)
+      .on('mouseenter', onMouseOver)
       .on('mouseout', onMouseOut)
       .on('mousedown', onMouseDown);
 
@@ -444,6 +457,10 @@ class BasePlot {
 
   setSelectedSamples(selectedSamples: Set<string>) {
     this.selectedSamples = selectedSamples;
+  }
+
+  setEnableTooltip(enable: boolean) {
+    this.enableTooltip = enable;
   }
 
   _makeHexagon(composition: number[]) : [number, number][] {
@@ -478,6 +495,7 @@ class QuaternaryShellPlot {
   maxWidth: number = 1200;
   margin: number = 50;
   hexRadius: number = 10;
+  enableTooltip: boolean = true;
   selectedOutlineWidth: number = 2;
   avoidDuplicates: boolean = true;
   selectedSamples: Set<string> = new Set();
@@ -572,6 +590,7 @@ class QuaternaryShellPlot {
         plot.verticesFn = verticesFn;
         plot.samplePositionFn = samplePositionFn;
         plot.setHexRadius(this.hexRadius);
+        plot.setEnableTooltip(this.enableTooltip);
         plot.setSelectedOutlineWidth(this.selectedOutlineWidth);
         plot.setSelectCallback(this.onSelect);
         plot.setDeselectCallback(this.onDeselect);
@@ -622,6 +641,12 @@ class QuaternaryShellPlot {
     this.opacityFn = fn;
     this.broadCast(plot => {
       plot.setOpacityFn(this.opacityFn);
+    });
+  }
+
+  setEnableTooltip(enable: boolean) {
+    this.broadCast(plot => {
+      plot.setEnableTooltip(enable);
     });
   }
 
