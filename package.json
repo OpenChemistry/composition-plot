@@ -4,6 +4,7 @@
   "description": "Composition Plots",
   "main": "dist/index.js",
   "module": "dist/index.js",
+  "sideEffects": false,
   "files": [
     "dist/"
   ],
