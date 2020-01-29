@@ -260,9 +260,7 @@ class BasePlot {
   drawGrid() {
     const vertices = this.verticesFn();
 
-    this.gridGroup.selectAll('circle').remove();
-
-    let circles = this.gridGroup
+    const circles = this.gridGroup
       .selectAll('circle')
       .data(vertices);
 
@@ -272,7 +270,6 @@ class BasePlot {
       .attr('cy', (d) => {return d.position[1]})
       .attr('r', 3)
 
-
     // Enter
     circles
       .enter()
@@ -281,47 +278,84 @@ class BasePlot {
       .attr('cy', (d) => {return d.position[1]})
       .attr('r', 3)
 
-    this.gridGroup.selectAll('path').remove();
+    // Exit
+    circles
+      .exit()
+      .remove()
+
+    const outlines = this.gridGroup.selectAll('path').data([0]);
+
+    const positions = vertices.map(v => v.position);
 
     let outlineFn = line()
       .x((d) => d[0])
       .y((d) => d[1])
       .curve(curveLinearClosed)
 
-    this.gridGroup
+    // Update
+    outlines
+      .datum(positions)
+      .attr('d', outlineFn)
+      .attr('fill', 'none')
+      .attr('stroke', 'rgba(0, 0, 0, 0.7')
+      .attr('stroke-width', 1.5);
+
+    // Enter
+    outlines
+      .enter()
       .append('path')
-        .datum(vertices.map(v => v.position))
+        .datum(positions)
         .attr('d', outlineFn)
         .attr('fill', 'none')
         .attr('stroke', 'rgba(0, 0, 0, 0.7')
         .attr('stroke-width', 1.5);
 
-    const axes = Object.values(this.dp.getAxes());
+    // Exit
+    outlines
+      .exit()
+      .remove();
 
-    if (!axes[0]) {
-      return;
-    }
-
-    this.gridGroup.selectAll('text').remove();
+    const axisLabels = vertices.map((vert, i) => (
+      {
+        position: vert.labelPosition,
+        label: this.dp.getAxisLabel(i)
+      }
+    ));
 
     const fontSize = 16;
 
-    let labels = this.gridGroup
+    const labels = this.gridGroup
       .selectAll('text')
-      .data(vertices);
+      .data(axisLabels);
 
+    // Update
     labels
-      .enter()
-      .append('text')
-      .attr('x', (d) => d.labelPosition[0])
-      .attr('y', (d) => d.labelPosition[1])
+      .attr('x', (d) => d.position[0])
+      .attr('y', (d) => d.position[1])
       .attr('text-anchor', 'middle')
       .attr('font-family', 'sans-serif')
       .attr('font-size', `${fontSize}px`)
       .style('user-select', 'none')
       .style('pointer-events',  'none')
-      .text((_d, i) => this.dp.getAxisLabel(i));
+      .text((d) => d.label);
 
+    // Enter
+    labels
+      .enter()
+      .append('text')
+      .attr('x', (d) => d.position[0])
+      .attr('y', (d) => d.position[1])
+      .attr('text-anchor', 'middle')
+      .attr('font-family', 'sans-serif')
+      .attr('font-size', `${fontSize}px`)
+      .style('user-select', 'none')
+      .style('pointer-events',  'none')
+      .text((d) => d.label);
+
+    // Exit
+    labels
+      .exit()
+      .remove()
   }
 
   drawData() {
