@@ -21,3 +21,4 @@ export {
 import * as colors from './utils/colors';
 import * as spline from './utils/spline';
 export { colors, spline };
+export { samplesToLines, downloadLinesAsCSV } from './utils/csv';
