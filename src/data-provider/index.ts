@@ -175,7 +175,7 @@ export class DataProvider {
 
   getAxisLabel(val: string | number) : string {
     const axis = this.getAxis(val);
-    return axis ? axis.element.charAt(0).toUpperCase() + axis.element.slice(1) : 'X';
+    return axis && axis.element ? axis.element.charAt(0).toUpperCase() + axis.element.slice(1) : 'X';
   }
 
   getScalarRange(key: string) : [number, number] {
