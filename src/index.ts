@@ -3,7 +3,7 @@ export { QuaternaryPlot } from './plots/quaternary';
 export { Spectrum } from './plots/spectrum';
 export { HeatMap } from './plots/heatmap';
 export { MultidimensionalPlot, makeCamera } from './plots/multidimensional';
-export { ColorMapLegend } from './plots/colormap';
+export { ColorMapLegend, CategoryLegend } from './plots/legend';
 export { DataProvider, HeatMapDataProvider } from './data-provider';
 export { InfoProvider } from './data-provider/info';
 export { ISample } from './types';
