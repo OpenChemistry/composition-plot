@@ -179,6 +179,9 @@ export class CategoryLegend extends BaseLegend {
     super(container);
     this.nPoints = 128;
     this.labels = ['0', '1'];
+    this.image.style.setProperty('image-rendering', '-webkit-crisp-edges');
+    this.image.style.setProperty('image-rendering', '-moz-crisp-edges');
+    this.image.style.setProperty('image-rendering', 'pixelated');
     this.draw();
   }
 
