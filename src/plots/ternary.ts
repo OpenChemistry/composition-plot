@@ -26,6 +26,7 @@ class TernaryPlot {
   inverted: boolean = false;
   selectedSamples: Set<string> = new Set();
   opacityFn: (sample: ISample) => number = () => 1;
+  textColor: RGBColor = [0, 0 ,0];
 
   spacing: number[];
   range: number[][];
@@ -134,6 +135,10 @@ class TernaryPlot {
     this.opacityFn = opacityFn;
   }
 
+  setTextColor(color: RGBColor) {
+    this.textColor = color;
+  }
+
   render() {
     this.drawGrid();
     this.drawData();
@@ -148,6 +153,7 @@ class TernaryPlot {
 
     // Update
     circles
+      .attr('fill', `rgb(${this.textColor[0] * 255}, ${this.textColor[1] * 255}, ${this.textColor[2] * 255})`)
       .attr('cx', (d) => {return d[0]})
       .attr('cy', (d) => {return d[1]})
       .attr('r', 3)
@@ -157,6 +163,7 @@ class TernaryPlot {
     circles
       .enter()
       .append('circle')
+      .attr('fill', `rgb(${this.textColor[0] * 255}, ${this.textColor[1] * 255}, ${this.textColor[2] * 255})`)
       .attr('cx', (d) => {return d[0]})
       .attr('cy', (d) => {return d[1]})
       .attr('r', 3)
@@ -191,6 +198,7 @@ class TernaryPlot {
       .attr('text-anchor', 'middle')
       .attr('font-family', 'sans-serif')
       .attr('font-size', `${fontSize}px`)
+      .attr('fill', `rgb(${this.textColor[0] * 255}, ${this.textColor[1] * 255}, ${this.textColor[2] * 255})`)
       .text((d, i) => {d; return this.dp.getAxisLabel(i)});
 
     this.gridGroup.selectAll('path').remove();
@@ -205,7 +213,7 @@ class TernaryPlot {
         .datum(this.vertices)
         .attr('d', outlineFn)
         .attr('fill', 'none')
-        .attr('stroke', 'rgba(0, 0, 0, 0.7')
+        .attr('stroke', `rgba(${this.textColor[0] * 255}, ${this.textColor[1] * 255}, ${this.textColor[2] * 255}, 0.7)`)
         .attr('stroke-width', 1.5);
 
 
@@ -236,7 +244,7 @@ class TernaryPlot {
           .append('path')
           .datum(points2d)
           .attr('d', gridlineFn)
-          .attr('stroke', 'rgba(0, 0, 0, 0.2)');
+          .attr('stroke', `rgba(${this.textColor[0] * 255}, ${this.textColor[1] * 255}, ${this.textColor[2] * 255}, 0.2)`)
       }
     }
     

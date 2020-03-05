@@ -10,6 +10,7 @@ import { getLineColor } from '../utils/colors';
 
 import { zip, isNil, uniqueId } from 'lodash-es';
 import { IDataProvider as ISpectrumProvider } from '../data-provider/spectrum';
+import { RGBColor } from '@colormap/core';
 
 interface IPlotOptions {
   xKey: string;
@@ -41,6 +42,7 @@ class Spectrum {
   margins: IMargins;
   showPoints: boolean = false;
   onSelect: Function = () => {};
+  textColor: RGBColor = [0, 0 ,0];
 
   constructor(svg: HTMLElement) {
     this.id = uniqueId();
@@ -80,6 +82,10 @@ class Spectrum {
       .style('padding', '0.5rem')
       .style('font-family', 'sans-serif')
       .style('font-size', 'small');
+  }
+
+  setTextColor(color: RGBColor) {
+    this.textColor = color;
   }
 
   setSpectra(spectra: {spectrum: ISpectrumProvider; sample: ISample}[]) {
@@ -232,6 +238,7 @@ class Spectrum {
       .append("text")
         .attr('text-anchor', 'middle')
         .attr('font-family', 'sans-serif')
+        .attr('fill', `rgb(${this.textColor[0] * 255}, ${this.textColor[1] * 255}, ${this.textColor[2] * 255})`)
         .text(xLabel);
 
     this.axesGroup
@@ -241,6 +248,7 @@ class Spectrum {
         .attr('text-anchor', 'middle')
         .attr('transform', 'rotate(-90)')
         .attr('font-family', 'sans-serif')
+        .attr('fill', `rgb(${this.textColor[0] * 255}, ${this.textColor[1] * 255}, ${this.textColor[2] * 255})`)
         .text(yLabel);
 
   }

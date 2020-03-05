@@ -17,6 +17,7 @@ class QuaternaryPlot {
   selectedSamples: Set<string>;
   onSelect: Function = () => {};
   onDeselect: Function = () => {};
+  textColor: [number, number, number] = [0, 0, 0];
 
   constructor(svg: HTMLElement, dp: DataProvider, edgeUnit: number = 250) {
     this.svg = svg;
@@ -69,6 +70,7 @@ class QuaternaryPlot {
       for (let j = 0; j < nPlots; ++j) {
         const dp = new DataProvider(3);
         const plot = new TernaryPlot(this.svg, dp, `face${i}-${j}`, j % 2 !== 0);
+        plot.setTextColor(this.textColor);
         let left = margin + startX + j * (edge / 2);
         plot.setPosition(left, startY, edge);
         plots.push(plot);
@@ -151,6 +153,14 @@ class QuaternaryPlot {
     }
     this.broadCast(fn);
     this.render();
+  }
+
+  setTextColor(color: [number, number, number]) {
+    this.textColor = color;
+    const fn = (plot: TernaryPlot) => {
+      plot.setTextColor(color);
+    }
+    this.broadCast(fn);
   }
 
   render() {
