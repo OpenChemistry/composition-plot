@@ -43,6 +43,7 @@ class Spectrum {
   showPoints: boolean = false;
   onSelect: Function = () => {};
   textColor: RGBColor = [0, 0 ,0];
+  lineColors: RGBColor[];
 
   constructor(svg: HTMLElement) {
     this.id = uniqueId();
@@ -86,6 +87,12 @@ class Spectrum {
 
   setTextColor(color: RGBColor) {
     this.textColor = color;
+    this.render()
+  }
+
+  setLineColors(colors: RGBColor[]) {
+    this.lineColors = colors;
+    this.render()
   }
 
   setSpectra(spectra: {spectrum: ISpectrumProvider; sample: ISample}[]) {
@@ -261,7 +268,7 @@ class Spectrum {
       .x((d: any) => d ? this.xScale(d[0]) : null)
       .y((d: any) => d ? this.yScale(d[1]) : null);
 
-    let colorGen = getLineColor();
+    let colorGen = getLineColor(this.lineColors);
 
     const strokeWidth = 1.5;
     const boldStrokeWidth = 3;
@@ -356,7 +363,7 @@ class Spectrum {
     let pointGroups = this.dataGroup.selectAll('g')
       .data(this.spectra);
 
-    colorGen = getLineColor();
+    colorGen = getLineColor(this.lineColors);
 
     let points = pointGroups
       .enter()
