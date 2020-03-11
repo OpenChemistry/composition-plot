@@ -24,7 +24,7 @@
     "d3-transition": "^1.1.1",
     "lodash-es": "^4.17.10",
     "plotly.js": "^1.42.5",
-    "vtk.js": "^8.4.1"
+    "vtk.js": "^13.11.0"
   },
   "devDependencies": {
     "@openchemistry/types": "^0.8.4",
@@ -36,7 +36,7 @@
     "@types/d3-transition": "^1.1.2",
     "@types/lodash-es": "^4.17.1",
     "@types/three": "^0.93.26",
-    "typescript": "^3.0.3"
+    "typescript": "^3.8.3"
   },
   "author": "Alessandro Genova, Kitware Inc.",
   "license": "BSD-3-Clause"
