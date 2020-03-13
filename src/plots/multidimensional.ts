@@ -26,6 +26,9 @@ class MultidimensionalPlot {
   mapper;
   actor;
   lut;
+  linesPolyData;
+  linesMapper;
+  linesActor;
   labelWidgets = [];
   radiusFn: (sample: ISample) => number = () => 1.5;
 
@@ -56,6 +59,17 @@ class MultidimensionalPlot {
     this.mapper.setLookupTable(this.lut);
     this.actor.setMapper(this.mapper);
     this.renderer.addActor(this.actor);
+
+    this.linesPolyData = vtk.Common.DataModel.vtkPolyData.newInstance();
+    this.linesMapper = vtk.Rendering.Core.vtkMapper.newInstance();
+    this.linesActor = vtk.Rendering.Core.vtkActor.newInstance();
+
+    this.linesMapper.setInputData(this.linesPolyData);
+    this.linesActor.setMapper(this.linesMapper);
+    this.linesActor.getProperty().setColor([0, 0, 0]);
+    this.renderer.addActor(this.linesActor);
+    
+    (window as any).widget3d = this;
 
     this.resize();
   }
@@ -163,6 +177,7 @@ class MultidimensionalPlot {
     }
 
     this.addLabels();
+    this.addLines();
 
     this.polyData.getPointData().setActiveScalars(this.dp.getActiveScalar());
     this.updateSizesArray();
@@ -171,7 +186,7 @@ class MultidimensionalPlot {
     this.renderWindow.render();
   }
 
-  private updateSizesArray() {
+  updateSizesArray() {
     const samples = this.dp.getSamples();
     const nSamples = samples.length;
     const sizes = new Float32Array(nSamples);
@@ -207,10 +222,54 @@ class MultidimensionalPlot {
     }
   }
 
+  addLines() {
+    const elements = this.compositionSpace || this.dp.getElements();
+    const composition = new Array(elements.length);
+
+    this.removeLines();
+
+    if (elements.length > 4) {
+      return;
+    }
+
+    const points = new Float32Array(elements.length * 3);
+    const lines = new Uint32Array(3 * elements.length * (elements.length - 1) / 2);
+
+    for (let i = 0; i < elements.length; ++i) {
+      for (let j = 0; j < this.compositionToPosition.getDimensions(); ++j) {
+        composition[j] = 0.0;
+      }
+      composition[i] = 1.0;
+      let position = this.compositionToPosition.getPosition(composition);
+      points[i * 3] = position[0];
+      points[i * 3 + 1] = position[1];
+      points[i * 3 + 2] = position[2];
+    }
+
+    let k = 0;
+    for (let i = 0; i < elements.length - 1; ++i) {
+      for (let j = i + 1; j < elements.length; ++j) {
+        lines[3 * k] = 2;
+        lines[3 * k + 1] = i;
+        lines[3 * k + 2] = j;
+        ++k;
+      }
+    }
+
+    this.linesPolyData.getPoints().setData(points);
+    this.linesPolyData.getLines().setData(lines);
+    this.linesPolyData.modified();
+  }
+
   removeLabels() {
     for (let labelWidget of this.labelWidgets) {
       labelWidget.setEnabled(0);
     }
+  }
+
+  removeLines() {
+    this.linesPolyData.getPoints().setData(new Float32Array(0));
+    this.linesPolyData.getLines().setData(new Uint32Array(0));
   }
 
   activeScalarsUpdated() {

@@ -11,7 +11,8 @@ export { combinations } from './utils/combinations';
 export {
   ICompositionToPositionProvider,
   NearestCompositionToPositionProvider,
-  AnalyticalCompositionToPositionProvider
+  AnalyticalCompositionToPositionProvider,
+  DataProvider as MultidimensionalDataProvider
 } from './data-provider/multidimensional';
 export {
   BasePlot, IVertex, verticesFnFactory,
