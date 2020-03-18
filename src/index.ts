@@ -19,6 +19,7 @@ export {
   VerticesFn, PlotTypes, samplePositionFnFactory,
   QuaternaryShellPlot
 } from './plots/common';
+export { PeriodicTable, Element, TableLayout } from './plots/periodic-table';
 import * as colors from './utils/colors';
 import * as spline from './utils/spline';
 export { colors, spline };
