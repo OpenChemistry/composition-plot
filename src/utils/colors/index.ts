@@ -1,13 +1,14 @@
 import * as presets from './presets';
+import { RGBColor } from '@colormap/core';
 
 export { presets };
 
-export function* getLineColor() {
+export function* getLineColor(colors: RGBColor[]) {
   let i = 0;
   while(true) {
-    let idx = i % presets.viridis.length;
-    yield presets.viridis[idx];
-    i += 4;
+    let colorIndex = i % colors.length;
+    yield colors[colorIndex];
+    i++;
   }
 }
 
