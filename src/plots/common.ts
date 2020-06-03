@@ -5,6 +5,7 @@ import { RGBColor, Scale } from '@colormap/core';
 
 import { ISample, Vec2, IAxis } from '../types';
 import { DataProvider } from '../data-provider';
+import { rgbToString } from '../utils/colors';
 
 export enum PlotTypes {
   Unary,
@@ -379,9 +380,9 @@ class BasePlot {
       .curve(curveLinearClosed);
 
     const fillFn = (_d, i) => {
-      const color = this.colorFn(this.dp.getSamples()[i], this.dp);
+      const [r, g, b] = this.colorFn(this.dp.getSamples()[i], this.dp);
       const opacity = this.opacityFn(this.dp.getSamples()[i], this.dp);
-      return `rgba(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255}, ${opacity})`
+      return rgbToString(r, g, b, opacity);
     }
 
     const onMouseOver = (_d, i, _hexagons) => {

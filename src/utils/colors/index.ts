@@ -1,5 +1,6 @@
 import * as presets from './presets';
 import { RGBColor } from '@colormap/core';
+import { isNil } from 'lodash-es';
 
 export { presets };
 
@@ -36,3 +37,10 @@ function numToHex(n: number) : string {
   }
   return hex;
 };
+
+export function rgbToString(r: number, g: number, b: number, a?: number) {
+  if (isNil(a)) {
+    return `rgb(${Math.round(r * 255)},${Math.round(g * 255)},${Math.round(b * 255)})`;
+  }
+  return `rgba(${Math.round(r * 255)},${Math.round(g * 255)},${Math.round(b * 255)},${a})`;
+}

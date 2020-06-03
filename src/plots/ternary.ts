@@ -6,6 +6,7 @@ import { ColorMap, RGBColor, createColorMap, linearScale } from '@colormap/core'
 import { IAxis, ISample } from '../types';
 import { ScaleLinear, scaleLinear } from 'd3-scale';
 import { DataProvider } from '../data-provider';
+import { rgbToString } from '../utils/colors';
 
 class TernaryPlot {
 
@@ -213,7 +214,7 @@ class TernaryPlot {
         .datum(this.vertices)
         .attr('d', outlineFn)
         .attr('fill', 'none')
-        .attr('stroke', `rgba(${this.textColor[0] * 255}, ${this.textColor[1] * 255}, ${this.textColor[2] * 255}, 0.7)`)
+        .attr('stroke', rgbToString(this.textColor[0], this.textColor[1], this.textColor[2], 0.7))
         .attr('stroke-width', 1.5);
 
 
@@ -244,7 +245,7 @@ class TernaryPlot {
           .append('path')
           .datum(points2d)
           .attr('d', gridlineFn)
-          .attr('stroke', `rgba(${this.textColor[0] * 255}, ${this.textColor[1] * 255}, ${this.textColor[2] * 255}, 0.2)`)
+          .attr('stroke', rgbToString(this.textColor[0], this.textColor[1], this.textColor[2], 0.2))
       }
     }
     
@@ -276,10 +277,11 @@ class TernaryPlot {
       .curve(curveLinearClosed);
 
     const fillFn = (_d, i) => {
-      let color = this.colorMap(
+      const [r, g, b] = this.colorMap(
         DataProvider.getSampleScalar(this.dp.samples[i], this.dp.getActiveScalar())
       );
-      return `rgba(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255}, ${this.opacityFn(this.dp.samples[i])})`
+      const a = this.opacityFn(this.dp.samples[i]);
+      return rgbToString(r, g, b, a);
     }
 
     const onMouseOver = (d, i) => {
