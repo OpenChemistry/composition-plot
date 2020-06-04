@@ -1,6 +1,8 @@
 import { Selection, BaseType, select, event as _currentEvent } from 'd3-selection';
 import { transition, Transition } from 'd3-transition';
 
+import { rgbToString } from './../utils/colors';
+
 export const enum Element {
   H = 'H',
   He = 'He',
@@ -387,12 +389,10 @@ export class PeriodicTable {
         .attr('width', this.cellWidth)
         .attr('height', this.cellHeight)
         .attr('fill', d => {
-          const [r, g, b, a] = this.backgroundColorFn(d.element);
-          return `rgba(${r * 255},${g * 255},${b * 255},${a})`;
+          return rgbToString(...this.backgroundColorFn(d.element));
         })
         .attr('stroke', d => {
-          const [r, g, b, a] = this.borderColorFn(d.element);
-          return `rgba(${r * 255},${g * 255},${b * 255},${a})`;
+          return rgbToString(...this.borderColorFn(d.element));
         })
       return b;
     }
@@ -403,8 +403,7 @@ export class PeriodicTable {
       const txts = t ? texts.transition(t) : texts;
       txts
         .attr('fill', d => {
-          const [r, g, b, a] = this.textColorFn(d.element);
-          return `rgba(${r * 255},${g * 255},${b * 255},${a})`;
+          return rgbToString(...this.textColorFn(d.element));
         })
         .attr('x', d => d.x + 10)
         .attr('y', d => d.y + 20)

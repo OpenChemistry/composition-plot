@@ -3,10 +3,10 @@ import { extent } from 'd3-array';
 import { axisBottom, axisLeft } from 'd3-axis';
 // import { line, curveLinearClosed } from 'd3-shape';
 
-import { ISample } from '../types';
+import { ISample, Vec3 } from '../types';
 import { ScaleLinear, scaleLinear } from 'd3-scale';
 import { line } from 'd3-shape';
-import { getLineColor } from '../utils/colors';
+import { getLineColor, rgbToString } from '../utils/colors';
 
 import { zip, isNil, uniqueId } from 'lodash-es';
 import { IDataProvider as ISpectrumProvider } from '../data-provider/spectrum';
@@ -323,8 +323,8 @@ class Spectrum {
       .attr('fill', 'none')
       .attr('stroke-width', strokeWidth)
       .attr('stroke', () => {
-        let color = colorGen.next().value;
-        return `rgba(${Math.round(color[0] * 255)}, ${Math.round(color[1] * 255)}, ${Math.round(color[2] * 255)}, 0.7)`
+        const [r, g, b] = colorGen.next().value as Vec3;
+        return rgbToString(r, g, b, 0.7);
       })
       .on('mouseover', onMouseOver)
       .on('mouseout', onMouseOut);
@@ -342,8 +342,8 @@ class Spectrum {
       .attr('fill', 'none')
       .attr('stroke-width', strokeWidth)
       .attr('stroke', () => {
-        let color = colorGen.next().value;
-        return `rgba(${Math.round(color[0] * 255)}, ${Math.round(color[1] * 255)}, ${Math.round(color[2] * 255)}, 0.7)`
+        const [r, g, b] = colorGen.next().value as Vec3;
+        return rgbToString(r, g, b, 0.7);
       })
       .attr('clip-path', `url(#clip${this.id})`)
       .on('mouseover', onMouseOver)
@@ -375,8 +375,8 @@ class Spectrum {
         return zip(d.spectrum.getArray(this.plotOptions.xKey), d.spectrum.getArray(this.plotOptions.yKey).map(val => val + i * this.offset));
       })
       .attr('fill', () => {
-        let color = colorGen.next().value;
-        return `rgba(${Math.round(color[0] * 255)}, ${Math.round(color[1] * 255)}, ${Math.round(color[2] * 255)}, 0.7)`
+        const [r, g, b] = colorGen.next().value as Vec3;
+        return rgbToString(r, g, b, 0.7);
       })
       .selectAll('circle')
       .data( d => d);
