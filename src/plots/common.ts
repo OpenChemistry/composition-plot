@@ -173,6 +173,8 @@ class BasePlot {
   verticesFn: VerticesFn = () => [];
   samplePositionFn: (composition: number[]) => Vec2 = () => [0, 0];
 
+  labelColorFn: (element: string) => RGBColor = () => [0, 0, 0];
+
   selectedOutlineWidth: number = 2;
   hexRadius: number = 10;
   spacing: number[];
@@ -243,6 +245,10 @@ class BasePlot {
 
   setOpacityFn(fn: (sample: ISample, dp: DataProvider) => number) {
     this.opacityFn = fn;
+  }
+
+  setLabelColorFn(fn: (element: string) => RGBColor) {
+    this.labelColorFn = fn;
   }
 
   setSelectedOutlineWidth(w: number) {
@@ -336,6 +342,7 @@ class BasePlot {
       .attr('text-anchor', 'middle')
       .attr('font-family', 'sans-serif')
       .attr('font-size', `${fontSize}px`)
+      .attr('fill', (d) => rgbToString(...this.labelColorFn(d.label)))
       .style('user-select', 'none')
       .style('pointer-events',  'none')
       .text((d) => d.label);
@@ -349,6 +356,7 @@ class BasePlot {
       .attr('text-anchor', 'middle')
       .attr('font-family', 'sans-serif')
       .attr('font-size', `${fontSize}px`)
+      .attr('fill', (d) => rgbToString(...this.labelColorFn(d.label)))
       .style('user-select', 'none')
       .style('pointer-events',  'none')
       .text((d) => d.label);
@@ -537,6 +545,7 @@ class QuaternaryShellPlot {
 
   colorFn: (sample: ISample, dp: DataProvider) => RGBColor = () => [0.5, 0.5, 0.5];
   opacityFn: (sample: ISample, dp: DataProvider) => number = () => 1;
+  labelColorFn: (element: string) => RGBColor = () => [0, 0, 0];
 
   onSelect: (sample: ISample) => void = () => {};
   onDeselect: (sample: ISample) => void = () => {};
@@ -632,6 +641,7 @@ class QuaternaryShellPlot {
         plot.setSelectedSamples(this.selectedSamples);
         plot.setColorFn(this.colorFn);
         plot.setOpacityFn(this.opacityFn);
+        plot.setLabelColorFn(this.labelColorFn);
         this.plots.push(plot);
       }
 
@@ -676,6 +686,13 @@ class QuaternaryShellPlot {
     this.opacityFn = fn;
     this.broadCast(plot => {
       plot.setOpacityFn(this.opacityFn);
+    });
+  }
+
+  setLabelColorFn(fn: (element: string) => RGBColor) {
+    this.labelColorFn = fn;
+    this.broadCast(plot => {
+      plot.setLabelColorFn(this.labelColorFn);
     });
   }
 
