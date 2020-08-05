@@ -173,9 +173,11 @@ class BasePlot {
   verticesFn: VerticesFn = () => [];
   samplePositionFn: (composition: number[]) => Vec2 = () => [0, 0];
 
+  borderColorFn: (sample: ISample, dp: DataProvider) => RGBColor = () => [1, 1, 1];
+  borderWidthFn: (sample: ISample, dp: DataProvider) => number = () => 0;
+
   labelColorFn: (element: string) => RGBColor = () => [0, 0, 0];
 
-  selectedOutlineWidth: number = 2;
   hexRadius: number = 10;
   spacing: number[];
   range: number[][];
@@ -247,12 +249,16 @@ class BasePlot {
     this.opacityFn = fn;
   }
 
-  setLabelColorFn(fn: (element: string) => RGBColor) {
-    this.labelColorFn = fn;
+  setBorderColorFn(fn: (sample: ISample, dp: DataProvider) => RGBColor) {
+    this.borderColorFn = fn;
   }
 
-  setSelectedOutlineWidth(w: number) {
-    this.selectedOutlineWidth = w;
+  setBorderWidthFn(fn: (sample: ISample, dp: DataProvider) => number) {
+    this.borderWidthFn = fn;
+  }
+
+  setLabelColorFn(fn: (element: string) => RGBColor) {
+    this.labelColorFn = fn;
   }
 
   release() {
@@ -393,6 +399,15 @@ class BasePlot {
       return rgbToString(r, g, b, opacity);
     }
 
+    const strokeFn = (_d, i) => {
+      const [r, g, b] = this.borderColorFn(this.dp.getSamples()[i], this.dp);
+      return rgbToString(r, g, b);
+    }
+
+    const strokeWidthFn = (_d, i) => {
+      return this.borderWidthFn(this.dp.getSamples()[i], this.dp);
+    }
+
     const onMouseOver = (_d, i, _hexagons) => {
       if (this.mouseDown) {
         if (DataProvider.isSelected(this.dp.getSamples()[i], this.selectedSamples)) {
@@ -460,10 +475,8 @@ class BasePlot {
         .datum((d) => this._makeHexagon(d))
         .attr('d', hexFn)
         .attr('fill', fillFn)
-        .attr('stroke', 'red')
-        .attr('stroke-width', (_d, i) => {
-          return DataProvider.isSelected(this.dp.getSamples()[i], this.selectedSamples) ? this.selectedOutlineWidth : 0;
-        })
+        .attr('stroke', strokeFn)
+        .attr('stroke-width', strokeWidthFn)
         .on('mouseenter', onMouseOver)
         .on('mouseout', onMouseOut)
         .on('mousedown', onMouseDown);
@@ -473,9 +486,8 @@ class BasePlot {
       .datum((d) => this._makeHexagon(d))
       .attr('d', hexFn)
       .attr('fill', fillFn)
-      .attr('stroke-width', (_d, i) => {
-        return DataProvider.isSelected(this.dp.getSamples()[i], this.selectedSamples) ? this.selectedOutlineWidth : 0;
-      })
+      .attr('stroke', strokeFn)
+      .attr('stroke-width', strokeWidthFn)
       .on('mouseenter', onMouseOver)
       .on('mouseout', onMouseOut)
       .on('mousedown', onMouseDown);
@@ -539,13 +551,14 @@ class QuaternaryShellPlot {
   margin: number = 50;
   hexRadius: number = 10;
   enableTooltip: boolean = true;
-  selectedOutlineWidth: number = 2;
   avoidDuplicates: boolean = true;
   selectedSamples: Set<string> = new Set();
 
   colorFn: (sample: ISample, dp: DataProvider) => RGBColor = () => [0.5, 0.5, 0.5];
   opacityFn: (sample: ISample, dp: DataProvider) => number = () => 1;
   labelColorFn: (element: string) => RGBColor = () => [0, 0, 0];
+  borderColorFn: (sample: ISample, dp: DataProvider) => RGBColor = () => [1, 1, 1];
+  borderWidthFn: (sample: ISample, dp: DataProvider) => number = () => 0;
 
   onSelect: (sample: ISample) => void = () => {};
   onDeselect: (sample: ISample) => void = () => {};
@@ -635,12 +648,13 @@ class QuaternaryShellPlot {
         plot.samplePositionFn = samplePositionFn;
         plot.setHexRadius(this.hexRadius);
         plot.setEnableTooltip(this.enableTooltip);
-        plot.setSelectedOutlineWidth(this.selectedOutlineWidth);
         plot.setSelectCallback(this.onSelect);
         plot.setDeselectCallback(this.onDeselect);
         plot.setSelectedSamples(this.selectedSamples);
         plot.setColorFn(this.colorFn);
         plot.setOpacityFn(this.opacityFn);
+        plot.setBorderColorFn(this.borderColorFn);
+        plot.setBorderWidthFn(this.borderWidthFn);
         plot.setLabelColorFn(this.labelColorFn);
         this.plots.push(plot);
       }
@@ -689,6 +703,20 @@ class QuaternaryShellPlot {
     });
   }
 
+  setBorderColorFn(fn: (sample: ISample, dp: DataProvider) => RGBColor) {
+    this.borderColorFn = fn;
+    this.broadCast(plot => {
+      plot.setBorderColorFn(this.borderColorFn);
+    });
+  }
+
+  setBorderWidthFn(fn: (sample: ISample, dp: DataProvider) => number) {
+    this.borderWidthFn = fn;
+    this.broadCast(plot => {
+      plot.setBorderWidthFn(this.borderWidthFn);
+    });
+  }
+
   setLabelColorFn(fn: (element: string) => RGBColor) {
     this.labelColorFn = fn;
     this.broadCast(plot => {
@@ -733,14 +761,6 @@ class QuaternaryShellPlot {
     this.hexRadius = radius;
     this.broadCast(plot => {
       plot.setHexRadius(this.hexRadius);
-      plot.render();
-    });
-  }
-
-  setSelectedOutlineWidth(w: number) {
-    this.selectedOutlineWidth = w;
-    this.broadCast(plot => {
-      plot.setSelectedOutlineWidth(this.selectedOutlineWidth);
       plot.render();
     });
   }
