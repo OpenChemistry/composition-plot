@@ -13,11 +13,12 @@ export interface IFom {
   runId: string;
 }
 
-export interface ISample {
+export interface ISample<T = {}> {
   _id: string;
   sampleNum: number;
   composition: IComposition;
   fom: IFom[];
+  metaData?: T;
   // [prop:string]: any;
 }
 
