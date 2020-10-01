@@ -4,7 +4,7 @@ import { axisBottom, axisLeft } from 'd3-axis';
 // import { line, curveLinearClosed } from 'd3-shape';
 
 import { ISample, Vec3 } from '../types';
-import { ScaleLinear, scaleLinear } from 'd3-scale';
+import { scaleLinear, scaleLog, ScaleLinear, ScaleLogarithmic } from 'd3-scale';
 import { line } from 'd3-shape';
 import { getLineColor, rgbToString } from '../utils/colors';
 
@@ -29,10 +29,12 @@ class Spectrum {
   name: string;
   id: string;
   svg: HTMLElement;
-  xScale: ScaleLinear<number, number>;
-  yScale: ScaleLinear<number, number>;
-  xRange: [number, number];
-  yRange: [number, number];
+  xScale: ScaleLinear<number, number> | ScaleLogarithmic<number, number>;
+  yScale: ScaleLinear<number, number> | ScaleLogarithmic<number, number>;
+  xRange?: [number, number];
+  yRange?: [number, number];
+  xLog: boolean;
+  yLog: boolean;
   spectra: {spectrum: ISpectrumProvider; sample: ISample}[] = [];
   dataTooltip: Selection<BaseType, {}, null, undefined>;
   dataGroup: Selection<BaseType, {}, null, undefined>;
@@ -53,6 +55,10 @@ class Spectrum {
       top: 10,
       right: 10
     }
+
+    this.xLog = false;
+    this.yLog = false;
+
     this.svg = svg;
     this.dataGroup = select(this.svg)
       .append('g')
@@ -122,13 +128,23 @@ class Spectrum {
     this.render();
   }
 
-  setXRange(xRange: [number, number]) {
+  setXRange(xRange?: [number, number]) {
     this.xRange = xRange;
     this.render();
   }
 
-  setYRange(yRange: [number, number]) {
+  setYRange(yRange?: [number, number]) {
     this.yRange = yRange;
+    this.render();
+  }
+
+  setXLog(xLog: boolean) {
+    this.xLog = xLog;
+    this.render();
+  }
+
+  setYLog(yLog: boolean) {
+    this.yLog = yLog;
     this.render();
   }
 
@@ -186,7 +202,14 @@ class Spectrum {
     } else if (xRange[0] === xRange[1]) {
       xRange[1] = xRange[0] + 1;
     }
-    this.xScale = scaleLinear().domain(xRange).range([this.margins.left, w - this.margins.right]);
+
+    if (this.xLog) {
+      xRange[0] = Math.max(Number.EPSILON, xRange[0]);
+      xRange[1] = Math.max(xRange[0], xRange[1]);
+      this.xScale = scaleLog().domain(xRange).range([this.margins.left, w - this.margins.right]);
+    } else {
+      this.xScale = scaleLinear().domain(xRange).range([this.margins.left, w - this.margins.right]);
+    }
 
     // The spectra are stacked for better visibility, adjust the domain accordingly
     // Add 10% to the range for each additional plot
@@ -198,7 +221,14 @@ class Spectrum {
     } else if (yRange[0] === yRange[1]) {
       yRange[1] = yRange[0] + 1;
     }
-    this.yScale = scaleLinear().domain(yRange).range([h - this.margins.bottom, this.margins.top]);
+
+    if (this.yLog) {
+      yRange[0] = Math.max(Number.EPSILON, yRange[0]);
+      yRange[1] = Math.max(yRange[0], yRange[1]);
+      this.yScale = scaleLog().domain(yRange).range([h - this.margins.bottom, this.margins.top]);
+    } else {
+      this.yScale = scaleLinear().domain(yRange).range([h - this.margins.bottom, this.margins.top]);
+    }
   }
 
   drawAxes() {
@@ -317,7 +347,20 @@ class Spectrum {
         if (!d.spectrum.hasKey(this.plotOptions.xKey) || !d.spectrum.hasKey(this.plotOptions.yKey)) {
           return [null, null];
         }
-        return zip(d.spectrum.getArray(this.plotOptions.xKey), d.spectrum.getArray(this.plotOptions.yKey).map(val => val + i * this.offset));
+        let xArray = d.spectrum.getArray(this.plotOptions.xKey);
+        let yArray = d.spectrum.getArray(this.plotOptions.yKey);
+
+        if (this.xLog) {
+          yArray = yArray.filter((_, i) => xArray[i] > Number.EPSILON);
+          xArray = xArray.filter(v => v > Number.EPSILON);
+        }
+
+        if (this.yLog) {
+          xArray = xArray.filter((_, i) => yArray[i] > Number.EPSILON);
+          yArray = yArray.filter(v => v > Number.EPSILON);
+        }
+
+        return zip(xArray, yArray.map(val => val + i * this.offset));
       })
       .attr('d', lineFn)
       .attr('fill', 'none')
@@ -336,7 +379,20 @@ class Spectrum {
         if (!d.spectrum.hasKey(this.plotOptions.xKey) || !d.spectrum.hasKey(this.plotOptions.yKey)) {
           return [null, null];
         }
-        return zip(d.spectrum.getArray(this.plotOptions.xKey), d.spectrum.getArray(this.plotOptions.yKey).map(val => val + i * this.offset));
+        let xArray = d.spectrum.getArray(this.plotOptions.xKey);
+        let yArray = d.spectrum.getArray(this.plotOptions.yKey);
+
+        if (this.xLog) {
+          yArray = yArray.filter((_, i) => xArray[i] > Number.EPSILON);
+          xArray = xArray.filter(v => v > Number.EPSILON);
+        }
+
+        if (this.yLog) {
+          xArray = xArray.filter((_, i) => yArray[i] > Number.EPSILON);
+          yArray = yArray.filter(v => v > Number.EPSILON);
+        }
+
+        return zip(xArray, yArray.map(val => val + i * this.offset));
       })
       .attr('d', lineFn)
       .attr('fill', 'none')
