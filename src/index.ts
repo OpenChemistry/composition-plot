@@ -2,6 +2,7 @@ export { TernaryPlot } from './plots/ternary';
 export { QuaternaryPlot } from './plots/quaternary';
 export { Spectrum } from './plots/spectrum';
 export { HeatMap } from './plots/heatmap';
+export { FastHeatMap } from './plots/fast-heatmap';
 export { MultidimensionalPlot, makeCamera } from './plots/multidimensional';
 export { ColorMapLegend, CategoryLegend } from './plots/legend';
 export { DataProvider, HeatMapDataProvider } from './data-provider';
