@@ -14,7 +14,7 @@ interface IMargins {
   right: number;
 }
 
-class HeatMap2 {
+class FastHeatMap {
 
   name: string;
   id: string;
@@ -203,4 +203,4 @@ class HeatMap2 {
   }
 }
 
-export { HeatMap2 };
+export { FastHeatMap };
