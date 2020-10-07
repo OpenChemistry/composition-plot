@@ -5,7 +5,7 @@ import { axisBottom, axisLeft } from 'd3-axis';
 import { scaleLinear, ScaleLinear } from 'd3-scale';
 
 import { uniqueId } from 'lodash-es';
-import { RGBColor, ColorMap, OpacityMap } from '@colormap/core';
+import { RGBColor } from '@colormap/core';
 
 interface IMargins {
   left: number;
@@ -13,6 +13,9 @@ interface IMargins {
   top: number;
   right: number;
 }
+
+type ColorFn = (x: number, y: number, scalar: number) => RGBColor;
+type OpacityFn = (x: number, y: number, scalar: number) => number;
 
 class FastHeatMap {
 
@@ -28,8 +31,8 @@ class FastHeatMap {
   imageData: ImageData;
   xScale: ScaleLinear<number, number>;
   yScale: ScaleLinear<number, number>;
-  colorFn: ColorMap = (x) => [x, x, x];
-  opacityFn: OpacityMap = () => 1;
+  colorFn: ColorFn = (_x, _y, scalar) => [scalar, scalar, scalar];
+  opacityFn: OpacityFn = () => 1;
   data: number[][] = [];
   dataGroup: Selection<BaseType, {}, null, undefined>;
   axesGroup: Selection<BaseType, {}, null, undefined>;
@@ -96,12 +99,12 @@ class FastHeatMap {
     this.render();
   }
 
-  setColorFn(colorFn: ColorMap) {
+  setColorFn(colorFn: ColorFn) {
     this.colorFn = colorFn;
     this.drawMap();
   }
 
-  setOpacityFn(opacityFn: OpacityMap) {
+  setOpacityFn(opacityFn: OpacityFn) {
     this.opacityFn = opacityFn;
     this.drawMap();
   }
@@ -184,7 +187,7 @@ class FastHeatMap {
     this.data.forEach((row, i) => {
       row.forEach((value, j) => {
 
-        const rgba = [...this.colorFn(value), this.opacityFn(value)].map(c => c * 255);
+        const rgba = [...this.colorFn(j, i, value), this.opacityFn(j, i, value)].map(c => c * 255);
         rgba.forEach((c, k) => {
           const idx = ((height - i - 1) * width + j) * 4 + k;
           this.imageData.data[idx] = c;
