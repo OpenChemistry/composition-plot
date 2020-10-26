@@ -15,14 +15,20 @@ export enum PlotTypes {
   TernaryDown
 }
 
+export enum SampleShape {
+  Hexagon,
+  Square,
+  Circle
+}
+
 export interface IVertex {
   position: Vec2;
-  labelPosition: Vec2;
+  labelPosition?: Vec2;
 }
 
 export type VerticesFn = () => IVertex[];
 
-export type SamplePositionFn = (composition: number[]) => Vec2
+export type SamplePositionFn = (sample: ISample) => Vec2
 
 export function verticesFnFactory(plotType: PlotTypes, origin: Vec2, size: number, fontSize: number) : VerticesFn {
   switch (plotType) {
@@ -101,7 +107,7 @@ export function verticesFnFactory(plotType: PlotTypes, origin: Vec2, size: numbe
   }
 }
 
-export function samplePositionFnFactory(plotType: PlotTypes, verticesFn: VerticesFn, scales: Scale[], edge: number) : SamplePositionFn {
+export function samplePositionFnFactory(plotType: PlotTypes, verticesFn: VerticesFn, scales: Scale[], edge: number, dp: DataProvider) : SamplePositionFn {
   const vertices = verticesFn();
   switch (plotType) {
     case PlotTypes.Unary : {
@@ -109,8 +115,9 @@ export function samplePositionFnFactory(plotType: PlotTypes, verticesFn: Vertice
     }
 
     case PlotTypes.BinaryHorizontal : {
-      return (composition: number[]) => {
+      return (sample) => {
         let pos: [number, number] = [0, 0];
+        const composition = dp.getActiveAxes().map(element => DataProvider.getSampleElementFraction(sample, element));
         let frac = composition.map((val, i) => scales[i](val));
         pos[0] = 1 - frac[0];
         pos[0] *= edge;
@@ -121,8 +128,9 @@ export function samplePositionFnFactory(plotType: PlotTypes, verticesFn: Vertice
     }
 
     case PlotTypes.TernaryUp : {
-      return (composition: number[]) => {
+      return (sample) => {
         let pos: [number, number] = [0, 0];
+        const composition = dp.getActiveAxes().map(element => DataProvider.getSampleElementFraction(sample, element));
         let frac = composition.map((val, i) => scales[i](val));
         pos[0] = 0.5 * ((2 * frac[1] + frac[2]) / (frac[0] + frac[1] + frac[2]));
         pos[1] = 0.5 * Math.sqrt(3) * frac[2] / (frac[0] + frac[1] + frac[2]);
@@ -136,8 +144,9 @@ export function samplePositionFnFactory(plotType: PlotTypes, verticesFn: Vertice
     }
 
     case PlotTypes.TernaryDown : {
-      return (composition: number[]) => {
+      return (sample) => {
         let pos: [number, number] = [0, 0];
+        const composition = dp.getActiveAxes().map(element => DataProvider.getSampleElementFraction(sample, element));
         let frac = composition.map((val, i) => scales[i](val));
         pos[0] = 0.5 * ((2 * frac[1] + frac[2]) / (frac[0] + frac[1] + frac[2]));
         pos[1] = 0.5 * Math.sqrt(3) * frac[2] / (frac[0] + frac[1] + frac[2]);
@@ -165,26 +174,25 @@ class BasePlot {
   gridGroup: Selection<BaseType, {}, null, undefined>;
   dataGroup: Selection<BaseType, {}, null, undefined>;
   dataTooltip: Selection<BaseType, unknown, HTMLElement, unknown>;
-  selectedSamples: Set<string> = new Set();
+  sampleShape: SampleShape = SampleShape.Hexagon;
 
   colorFn: (sample: ISample, dp: DataProvider) => RGBColor = () => [0.5, 0.5, 0.5];
   opacityFn: (sample: ISample, dp: DataProvider) => number = () => 1;
 
   verticesFn: VerticesFn = () => [];
-  samplePositionFn: (composition: number[]) => Vec2 = () => [0, 0];
+  samplePositionFn: SamplePositionFn = () => [0, 0];
 
   borderColorFn: (sample: ISample, dp: DataProvider) => RGBColor = () => [1, 1, 1];
   borderWidthFn: (sample: ISample, dp: DataProvider) => number = () => 0;
 
   labelColorFn: (element: string) => RGBColor = () => [0, 0, 0];
 
-  hexRadius: number = 10;
+  sampleRadius: number = 10;
   spacing: number[];
   range: number[][];
   enableTooltip: boolean = true;
 
   onSelect: (sample: ISample) => void;
-  onDeselect: (sample: ISample) => void;
 
   mouseDown: boolean = false;
 
@@ -275,7 +283,7 @@ class BasePlot {
 
     const circles = this.gridGroup
       .selectAll('circle')
-      .data(vertices);
+      .data([]);
 
     // Update
     circles
@@ -328,7 +336,7 @@ class BasePlot {
       .exit()
       .remove();
 
-    const axisLabels = vertices.map((vert, i) => (
+    const axisLabels = vertices.filter(vert => vert.labelPosition).map((vert, i) => (
       {
         position: vert.labelPosition,
         label: this.dp.getAxisLabel(i)
@@ -374,19 +382,6 @@ class BasePlot {
   }
 
   drawData() {
-    const nAxes = Object.values(this.dp.getAxes()).length;
-    const axes = [];
-    for (let i = 0; i < nAxes; ++i) {
-      axes.push(this.dp.getAxis(i));
-    }
-
-    if (!axes[0]) {
-      return;
-    }
-
-    let points3d = this.dp.getSamples().map((sample: ISample): number[] => {
-      return axes.map(ax => DataProvider.getSampleElementFraction(sample, ax.element));
-    });
 
     let hexFn = line()
       .x((d) => d[0])
@@ -408,18 +403,12 @@ class BasePlot {
       return this.borderWidthFn(this.dp.getSamples()[i], this.dp);
     }
 
-    const onMouseOver = (_d, i, _hexagons) => {
-      if (this.mouseDown) {
-        if (DataProvider.isSelected(this.dp.getSamples()[i], this.selectedSamples)) {
-          if (this.onDeselect) {
-            this.onDeselect(this.dp.getSamples()[i]);
-          }
-        } else {
-          if (this.onSelect) {
-            this.onSelect(this.dp.getSamples()[i]);
-          }
-        }
-      }
+  const onMouseOver = (_d, i, _hexagons) => {
+      // if (this.mouseDown) {
+      //   if (this.onSelect) {
+      //     this.onSelect(this.dp.getSamples()[i]);
+      //   }
+      // }
 
       if (this.enableTooltip && !this.mouseDown) {
         const x = currentEvent.clientX;
@@ -451,28 +440,37 @@ class BasePlot {
       .style('display', 'none');
     }
 
-    const onMouseDown = (d, i) => {
-      d;
-      if (DataProvider.isSelected(this.dp.getSamples()[i], this.selectedSamples)) {
-        if (this.onDeselect) {
-          this.onDeselect(this.dp.getSamples()[i]);
-        }
-      } else {
-        if (this.onSelect) {
-          this.onSelect(this.dp.getSamples()[i]);
-        }
+    const onMouseDown = (_d, i) => {
+      if (this.onSelect) {
+        this.onSelect(this.dp.getSamples()[i]);
       }
     }
 
     const hexagons = this.dataGroup
       .selectAll('path')
-      .data(points3d);
+      .data(this.dp.getSamples());
+
+    let pathFn;
+    switch(this.sampleShape) {
+      case SampleShape.Square: {
+        pathFn = this._polygonFn(4, 1);
+        break;
+      }
+      case SampleShape.Circle: {
+        pathFn = this._polygonFn(18);
+        break;
+      }
+      case SampleShape.Hexagon:
+      default: {
+        pathFn = this._polygonFn(6, 1);
+      }
+    }
 
     // Enter
     hexagons
       .enter()
         .append('path')
-        .datum((d) => this._makeHexagon(d))
+        .datum((d) => pathFn(d))
         .attr('d', hexFn)
         .attr('fill', fillFn)
         .attr('stroke', strokeFn)
@@ -483,7 +481,7 @@ class BasePlot {
 
     // Update
     hexagons
-      .datum((d) => this._makeHexagon(d))
+      .datum((d) => pathFn(d))
       .attr('d', hexFn)
       .attr('fill', fillFn)
       .attr('stroke', strokeFn)
@@ -502,35 +500,33 @@ class BasePlot {
     this.onSelect = fn;
   }
 
-  setDeselectCallback(fn: (sample: ISample) => void) {
-    this.onDeselect = fn;
+  setSampleRadius(radius: number) {
+    this.sampleRadius = radius;
   }
 
-  setHexRadius(radius: number) {
-    this.hexRadius = radius;
-  }
-
-  setSelectedSamples(selectedSamples: Set<string>) {
-    this.selectedSamples = selectedSamples;
+  setSampleShape(shape: SampleShape) {
+    this.sampleShape = shape;
   }
 
   setEnableTooltip(enable: boolean) {
     this.enableTooltip = enable;
   }
 
-  _makeHexagon(composition: number[]) : [number, number][] {
-    let radius = this.hexRadius;
-    radius *= 0.99;
-    let center = this.samplePositionFn(composition);
-    let points: [number, number][] = [];
-    for (let i = 0; i < 6; ++i) {
-      let xy: [number, number] = [
-        radius * Math.cos(Math.PI * (2 * i + 1) / 6) + center[0],
-        radius * Math.sin(Math.PI * (2 * i + 1) / 6) + center[1],
-      ]
-      points.push(xy);
+  _polygonFn = (nPoints: number, phase: number = 0) => {
+    return (sample: ISample) : [number, number][] => {
+      let radius = this.sampleRadius;
+      radius *= 0.99;
+      let center = this.samplePositionFn(sample);
+      let points: [number, number][] = [];
+      for (let i = 0; i < nPoints; ++i) {
+        let xy: [number, number] = [
+          radius * Math.cos(Math.PI * (2 * i + phase) / nPoints) + center[0],
+          radius * Math.sin(Math.PI * (2 * i + phase) / nPoints) + center[1],
+        ]
+        points.push(xy);
+      }
+      return points;
     }
-    return points;
   }
 
   dataUpdated() {
@@ -549,10 +545,10 @@ class QuaternaryShellPlot {
   origin: Vec2 = [0, 0];
   maxWidth: number = 1200;
   margin: number = 50;
-  hexRadius: number = 10;
+  sampleRadius: number = 10;
+  sampleShape: SampleShape = SampleShape.Hexagon;
   enableTooltip: boolean = true;
   avoidDuplicates: boolean = true;
-  selectedSamples: Set<string> = new Set();
 
   colorFn: (sample: ISample, dp: DataProvider) => RGBColor = () => [0.5, 0.5, 0.5];
   opacityFn: (sample: ISample, dp: DataProvider) => number = () => 1;
@@ -561,7 +557,6 @@ class QuaternaryShellPlot {
   borderWidthFn: (sample: ISample, dp: DataProvider) => number = () => 0;
 
   onSelect: (sample: ISample) => void = () => {};
-  onDeselect: (sample: ISample) => void = () => {};
 
   constructor(svg: HTMLElement, dp: DataProvider, id: string ) {
     this.id = id;
@@ -571,7 +566,7 @@ class QuaternaryShellPlot {
 
   setPlacement(
     initialShell: number, finalShell: number, spacing: number, edgeUnit: number,
-    origin: Vec2 = [0, 0], maxWidth: number = 1200, margin: number = 50
+    origin: Vec2 = [50, 0], maxWidth: number = 1200, margin: number = 50
     ) {
       this.initialShell = initialShell;
       this.finalShell = finalShell;
@@ -643,14 +638,13 @@ class QuaternaryShellPlot {
         const plot = new BasePlot(this.svg, dp, `${this.id}_face${i}-${j}`);
         const plotType = j % 2 === 0 ? PlotTypes.TernaryUp : PlotTypes.TernaryDown;
         const verticesFn = verticesFnFactory(plotType, [startX + j * (edge / 2), startY], edge, 16);
-        const samplePositionFn = samplePositionFnFactory(plotType, verticesFn, scales, edge);
+        const samplePositionFn = samplePositionFnFactory(plotType, verticesFn, scales, edge, dp);
         plot.verticesFn = verticesFn;
         plot.samplePositionFn = samplePositionFn;
-        plot.setHexRadius(this.hexRadius);
+        plot.setSampleRadius(this.sampleRadius);
+        plot.setSampleShape(this.sampleShape);
         plot.setEnableTooltip(this.enableTooltip);
         plot.setSelectCallback(this.onSelect);
-        plot.setDeselectCallback(this.onDeselect);
-        plot.setSelectedSamples(this.selectedSamples);
         plot.setColorFn(this.colorFn);
         plot.setOpacityFn(this.opacityFn);
         plot.setBorderColorFn(this.borderColorFn);
@@ -673,20 +667,6 @@ class QuaternaryShellPlot {
     this.broadCast(plot => {
       plot.setSelectCallback(this.onSelect);
     });
-  }
-
-  setDeselectCallback(fn: (sample: ISample) => void) {
-    this.onDeselect = fn;
-    this.broadCast(plot => {
-      plot.setDeselectCallback(this.onDeselect);
-    });
-  }
-
-  setSelectedSamples(selectedSamples: Set<string>) {
-    this.selectedSamples = selectedSamples;
-    this.broadCast(plot => {
-      plot.setSelectedSamples(this.selectedSamples);
-    })
   }
 
   setColorFn(fn: (sample: ISample, dp: DataProvider) => RGBColor) {
@@ -757,10 +737,18 @@ class QuaternaryShellPlot {
     this.render();
   }
 
-  setHexRadius(radius: number) {
-    this.hexRadius = radius;
+  setSampleRadius(radius: number) {
+    this.sampleRadius = radius;
     this.broadCast(plot => {
-      plot.setHexRadius(this.hexRadius);
+      plot.setSampleRadius(this.sampleRadius);
+      plot.render();
+    });
+  }
+
+  setSampleShape(shape: SampleShape) {
+    this.sampleShape = shape;
+    this.broadCast(plot => {
+      plot.setSampleShape(this.sampleShape);
       plot.render();
     });
   }
@@ -816,6 +804,7 @@ class QuaternaryShellPlot {
         [perm[3]]: { ...axes[perm[3]], range: [constValue, constValue]}
       }
       plots[i].dp.setAxes(newAxes);
+      plots[i].dp.setActiveAxes([perm[0], perm[1], perm[2]]);
       plots[i].dp.setActiveScalar(this.dp.getActiveScalar());
       plots[i].dataUpdated();
     }
