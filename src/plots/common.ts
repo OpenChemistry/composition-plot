@@ -404,12 +404,6 @@ class BasePlot {
     }
 
   const onMouseOver = (_d, i, _hexagons) => {
-      // if (this.mouseDown) {
-      //   if (this.onSelect) {
-      //     this.onSelect(this.dp.getSamples()[i]);
-      //   }
-      // }
-
       if (this.enableTooltip && !this.mouseDown) {
         const x = currentEvent.clientX;
         const y = currentEvent.clientY;
