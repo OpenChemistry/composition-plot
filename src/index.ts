@@ -18,7 +18,7 @@ export {
 export {
   BasePlot, IVertex, verticesFnFactory,
   VerticesFn, PlotTypes, samplePositionFnFactory,
-  QuaternaryShellPlot
+  QuaternaryShellPlot, SampleShape
 } from './plots/common';
 export { PeriodicTable, Element, TableLayout } from './plots/periodic-table';
 import * as colors from './utils/colors';
