@@ -24,6 +24,46 @@ interface IMargins {
   right: number;
 }
 
+const getArrays = (spectrum: ISpectrumProvider, xKey: string, yKey: string, xLog: boolean, yLog: boolean) => {
+  if (xKey === 'index' && yKey === 'index') {
+    return [null, null];
+  }
+
+  let xArray: number[];
+  let yArray: number[];
+
+  if (xKey === 'index') {
+    if (!spectrum.hasKey(yKey)) {
+      return [null, null];
+    }
+    yArray = spectrum.getArray(yKey);
+    xArray = yArray.map((_, j) => j + 1);
+  } else if (yKey === 'index') {
+    if (!spectrum.hasKey(xKey)) {
+      return [null, null];
+    }
+    xArray = spectrum.getArray(xKey);
+    yArray = xArray.map((_, j) => j + 1);
+  } else if (!spectrum.hasKey(xKey) || !spectrum.hasKey(yKey)) {
+    return [null, null];
+  } else {
+    xArray = spectrum.getArray(xKey);
+    yArray = spectrum.getArray(yKey);
+  }
+
+  if (xLog) {
+    yArray = yArray.filter((_, i) => xArray[i] > Number.EPSILON);
+    xArray = xArray.filter(v => v > Number.EPSILON);
+  }
+
+  if (yLog) {
+    xArray = xArray.filter((_, i) => yArray[i] > Number.EPSILON);
+    yArray = yArray.filter(v => v > Number.EPSILON);
+  }
+
+  return [xArray, yArray];
+}
+
 class Spectrum {
 
   name: string;
@@ -105,15 +145,15 @@ class Spectrum {
     this.spectra = spectra;
     if (this.spectra.length > 0) {
       const spectrum = this.spectra[0].spectrum;
-      if (isNil(this.plotOptions)) {
-        this.plotOptions = {
-          xKey: spectrum.getKeys()[0],
-          yKey: spectrum.getKeys()[1]
-        }
-      } else if (!spectrum.hasKey(this.plotOptions.xKey) || !spectrum.hasKey(this.plotOptions.yKey)) {
-        this.plotOptions.xKey = null;
-        this.plotOptions.yKey = null;
+      let xKey = this.plotOptions ? this.plotOptions.xKey : spectrum.getKeys()[0];
+      let yKey = this.plotOptions ? this.plotOptions.yKey : spectrum.getKeys()[1];
+      if (!spectrum.hasKey(xKey)) {
+        xKey = 'index';
       }
+      if (!spectrum.hasKey(yKey)) {
+        yKey = 'index';
+      }
+      this.plotOptions = {xKey, yKey};
     }
     this.render();
   }
@@ -170,12 +210,13 @@ class Spectrum {
     if (calculateXRange || calculateYRange) {
       for (let i = 0; i < this.spectra.length; ++i) {
         let spectrum = this.spectra[i].spectrum;
-        if (!spectrum.hasKey(this.plotOptions.xKey) || !spectrum.hasKey(this.plotOptions.yKey)) {
+        const [xArray, yArray] = getArrays(spectrum, this.plotOptions.xKey, this.plotOptions.yKey, false, false);
+        if (!xArray || !yArray) {
           continue;
         }
 
         if (calculateXRange) {
-          const xR = extent<number>(spectrum.getArray(this.plotOptions.xKey));
+          const xR = extent<number>(xArray);
 
           if (!isNil(xR[0]) && !isNil(xR[1])) {
             xRange[0] = Math.min(xRange[0], xR[0]);
@@ -184,7 +225,7 @@ class Spectrum {
         }
 
         if (calculateYRange) {
-          const yR = extent<number>(spectrum.getArray(this.plotOptions.yKey));
+          const yR = extent<number>(yArray);
           if (!isNil(yR[0]) && !isNil(yR[1])) {
             const yOffset = i * this.offset;
             yRange[0] = Math.min(yRange[0], yR[0] + yOffset);
@@ -264,10 +305,10 @@ class Spectrum {
       const dp = this.spectra[0].spectrum;
       xLabel = dp.getLabel(this.plotOptions.xKey);
       yLabel = dp.getLabel(this.plotOptions.yKey);
-    } else {
-      xLabel = this.plotOptions.xKey;
-      yLabel = this.plotOptions.yKey;
     }
+
+    xLabel = xLabel || this.plotOptions.xKey;
+    yLabel = yLabel || this.plotOptions.yKey;
 
     this.axesGroup
       .append('g')
@@ -344,22 +385,10 @@ class Spectrum {
     // Update
     plots
       .datum((d, i) => {
-        if (!d.spectrum.hasKey(this.plotOptions.xKey) || !d.spectrum.hasKey(this.plotOptions.yKey)) {
+        const [xArray, yArray] = getArrays(d.spectrum, this.plotOptions.xKey, this.plotOptions.yKey, this.xLog, this.yLog);
+        if (!xArray || !yArray) {
           return [null, null];
         }
-        let xArray = d.spectrum.getArray(this.plotOptions.xKey);
-        let yArray = d.spectrum.getArray(this.plotOptions.yKey);
-
-        if (this.xLog) {
-          yArray = yArray.filter((_, i) => xArray[i] > Number.EPSILON);
-          xArray = xArray.filter(v => v > Number.EPSILON);
-        }
-
-        if (this.yLog) {
-          xArray = xArray.filter((_, i) => yArray[i] > Number.EPSILON);
-          yArray = yArray.filter(v => v > Number.EPSILON);
-        }
-
         return zip(xArray, yArray.map(val => val + i * this.offset));
       })
       .attr('d', lineFn)
@@ -376,22 +405,10 @@ class Spectrum {
     plots.enter()
       .append('path')
       .datum((d, i) => {
-        if (!d.spectrum.hasKey(this.plotOptions.xKey) || !d.spectrum.hasKey(this.plotOptions.yKey)) {
+        const [xArray, yArray] = getArrays(d.spectrum, this.plotOptions.xKey, this.plotOptions.yKey, this.xLog, this.yLog);
+        if (!xArray || !yArray) {
           return [null, null];
         }
-        let xArray = d.spectrum.getArray(this.plotOptions.xKey);
-        let yArray = d.spectrum.getArray(this.plotOptions.yKey);
-
-        if (this.xLog) {
-          yArray = yArray.filter((_, i) => xArray[i] > Number.EPSILON);
-          xArray = xArray.filter(v => v > Number.EPSILON);
-        }
-
-        if (this.yLog) {
-          xArray = xArray.filter((_, i) => yArray[i] > Number.EPSILON);
-          yArray = yArray.filter(v => v > Number.EPSILON);
-        }
-
         return zip(xArray, yArray.map(val => val + i * this.offset));
       })
       .attr('d', lineFn)
@@ -425,10 +442,9 @@ class Spectrum {
       .enter()
       .append('g')
       .datum((d, i) => {
-        if (!d.spectrum.hasKey(this.plotOptions.xKey) || !d.spectrum.hasKey(this.plotOptions.yKey)) {
-          return [null, null];
-        }
-        return zip(d.spectrum.getArray(this.plotOptions.xKey), d.spectrum.getArray(this.plotOptions.yKey).map(val => val + i * this.offset));
+        const [xArray, yArray] = getArrays(d.spectrum, this.plotOptions.xKey, this.plotOptions.yKey, this.xLog, this.yLog);
+
+        return zip(xArray, yArray.map(val => val + i * this.offset));
       })
       .attr('fill', () => {
         const [r, g, b] = colorGen.next().value as Vec3;
