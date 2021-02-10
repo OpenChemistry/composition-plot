@@ -361,7 +361,9 @@ class Spectrum {
 
       let innerHtml = '';
       for (let [key, val] of Object.entries(sample.composition)) {
-        innerHtml += `${key.charAt(0).toUpperCase() + key.slice(1)}: ${val.toFixed(2)} <br>`
+        if (typeof val.toFixed === 'function') {
+          innerHtml = `${key.charAt(0).toUpperCase() + key.slice(1)}: ${val.toFixed(2)} <br>`
+        }
       }
       this.dataTooltip.html(innerHtml);
       this.dataTooltip
