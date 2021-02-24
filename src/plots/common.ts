@@ -175,6 +175,7 @@ class BasePlot {
   dataGroup: Selection<BaseType, {}, null, undefined>;
   dataTooltip: Selection<BaseType, unknown, HTMLElement, unknown>;
   sampleShape: SampleShape = SampleShape.Hexagon;
+  compositionSpace: string[] | undefined;
 
   colorFn: (sample: ISample, dp: DataProvider) => RGBColor = () => [0.5, 0.5, 0.5];
   opacityFn: (sample: ISample, dp: DataProvider) => number = () => 1;
@@ -267,6 +268,10 @@ class BasePlot {
 
   setLabelColorFn(fn: (element: string) => RGBColor) {
     this.labelColorFn = fn;
+  }
+
+  setCompositionSpace(compositionSpace: string[]) {
+    this.compositionSpace = compositionSpace;
   }
 
   release() {
@@ -382,6 +387,21 @@ class BasePlot {
   }
 
   drawData() {
+    let filter: (sample: ISample) => boolean;
+    if (this.compositionSpace) {
+      const compositionSet = new Set(this.compositionSpace);
+      filter = (sample: ISample) : boolean => {
+        for (let [element, fraction] of Object.entries(sample.composition)) {
+          if (!compositionSet.has(element) && fraction > Number.EPSILON) {
+            return false;
+          }
+        }
+        return true;
+      }
+    } else {
+      filter = () => true;
+    }
+    const samples = this.dp.getSamples(filter);
 
     let hexFn = line()
       .x((d) => d[0])
@@ -389,18 +409,18 @@ class BasePlot {
       .curve(curveLinearClosed);
 
     const fillFn = (_d, i) => {
-      const [r, g, b] = this.colorFn(this.dp.getSamples()[i], this.dp);
-      const opacity = this.opacityFn(this.dp.getSamples()[i], this.dp);
+      const [r, g, b] = this.colorFn(samples[i], this.dp);
+      const opacity = this.opacityFn(samples[i], this.dp);
       return rgbToString(r, g, b, opacity);
     }
 
     const strokeFn = (_d, i) => {
-      const [r, g, b] = this.borderColorFn(this.dp.getSamples()[i], this.dp);
+      const [r, g, b] = this.borderColorFn(samples[i], this.dp);
       return rgbToString(r, g, b);
     }
 
     const strokeWidthFn = (_d, i) => {
-      return this.borderWidthFn(this.dp.getSamples()[i], this.dp);
+      return this.borderWidthFn(samples[i], this.dp);
     }
 
   const onMouseOver = (_d, i, _hexagons) => {
@@ -408,14 +428,14 @@ class BasePlot {
         const x = currentEvent.clientX;
         const y = currentEvent.clientY;
         let tooltipHtml = "";
-        Object.entries(this.dp.getSamples()[i].composition).forEach(([el, frac]) => {
+        Object.entries(samples[i].composition).forEach(([el, frac]) => {
           if (frac > Number.EPSILON) {
             tooltipHtml += `${this.dp.getAxisLabel(el)}: ${frac.toFixed(2)}<br>`;
           }
         });
 
         const activeScalar = this.dp.getActiveScalar();
-        const scalarValue = DataProvider.getSampleScalar(this.dp.getSamples()[i], activeScalar);
+        const scalarValue = DataProvider.getSampleScalar(samples[i], activeScalar);
         if (Number.isFinite(scalarValue)) {
           tooltipHtml += `${activeScalar.replace('\\u002', '.')}: ${scalarValue.toFixed(2)}<br>`;
         }
@@ -436,13 +456,13 @@ class BasePlot {
 
     const onMouseDown = (_d, i) => {
       if (this.onSelect) {
-        this.onSelect(this.dp.getSamples()[i]);
+        this.onSelect(samples[i]);
       }
     }
 
     const hexagons = this.dataGroup
       .selectAll('path')
-      .data(this.dp.getSamples());
+      .data(samples);
 
     let pathFn;
     switch(this.sampleShape) {
@@ -524,6 +544,7 @@ class BasePlot {
   }
 
   dataUpdated() {
+    this.render();
   }
 }
 
