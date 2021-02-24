@@ -95,8 +95,9 @@ export class DataProvider {
     this.setActiveScalar(this.getDefaultScalar(this.getActiveScalar()));
   }
 
-  getSamples() : ISample[] {
-    return this.samples;
+  getSamples(sampleFilter: (sample: ISample) => boolean | undefined = undefined) : ISample[] {
+    const filter = sampleFilter || (() => true);
+    return this.samples.filter(filter);
   }
 
   setAxisOrder(order: string[]) {
