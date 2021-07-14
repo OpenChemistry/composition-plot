@@ -42,6 +42,7 @@
     "@types/d3-transition": "^1.1.2",
     "@types/lodash-es": "^4.17.1",
     "@types/three": "^0.93.26",
+    "gh-pages": "^3.2.3",
     "typescript": "^3.8.3"
   },
   "author": "Alessandro Genova, Kitware Inc.",

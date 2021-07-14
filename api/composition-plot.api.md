@@ -60,7 +60,7 @@ export class BasePlot {
     // (undocumented)
     opacityFn: (sample: ISample, dp: DataProvider) => number;
     // (undocumented)
-    _polygonFn: (nPoints: number, phase?: number) => (sample: ISample<{}>) => [number, number][];
+    _polygonFn: (nPoints: number, phase?: number) => (sample: ISample) => [number, number][];
     // (undocumented)
     range: number[][];
     release(): void;
@@ -465,7 +465,6 @@ const enum Element_2 {
     // (undocumented)
     Zr = "Zr"
 }
-
 export { Element_2 as Element }
 
 // @public (undocumented)
@@ -1188,7 +1187,6 @@ export type VerticesFn = () => IVertex[];
 
 // @public
 export function verticesFnFactory(plotType: PlotTypes, origin: Vec2, size: number, fontSize: number): VerticesFn;
-
 
 // Warnings were encountered during analysis:
 //
