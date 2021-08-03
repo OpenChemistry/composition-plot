@@ -1,11 +1,21 @@
 import { linearScale, RGBColor } from '@colormap/core';
 
+import '@kitware/vtk.js/Rendering/Profiles/Geometry';
+import '@kitware/vtk.js/Rendering/Profiles/Molecule';
+import vtkCamera from '@kitware/vtk.js/Rendering/Core/Camera';
+import vtkGenericRenderWindow from '@kitware/vtk.js/Rendering/Misc/GenericRenderWindow';
+import vtkPolyData from '@kitware/vtk.js/Common/DataModel/PolyData';
+import vtkSphereMapper from '@kitware/vtk.js/Rendering/Core/SphereMapper';
+import vtkMapper from '@kitware/vtk.js/Rendering/Core/Mapper';
+import vtkActor from '@kitware/vtk.js/Rendering/Core/Actor';
+import vtkColorTransferFunction from '@kitware/vtk.js/Rendering/Core/ColorTransferFunction';
+import vtkDataArray from '@kitware/vtk.js/Common/Core/DataArray';
+import vtkLabelWidget from '@kitware/vtk.js/Interaction/Widgets/LabelWidget';
+
 import { DataProvider, ICompositionToPositionProvider } from '../data-provider/multidimensional';
 
-import 'vtk.js';
 import { hexTorgb } from '../utils/colors';
 import { ISample, Vec2 } from '../types';
-declare const vtk: any;
 
 /**
  * Creates a new vtkCamera object
@@ -16,7 +26,7 @@ declare const vtk: any;
  * 
  */
 function makeCamera() {
-  return vtk.Rendering.Core.vtkCamera.newInstance();
+  return vtkCamera.newInstance();
 }
 
 /**
@@ -69,16 +79,16 @@ class MultidimensionalPlot {
     this.colors = [[0, 0, 0], [1, 1, 1]];
     this.inverted = false;
 
-    this.viewer = vtk.Rendering.Misc.vtkGenericRenderWindow.newInstance();
+    this.viewer = vtkGenericRenderWindow.newInstance();
     this.viewer.setBackground(0.9, 0.9, 0.9);
     this.viewer.setContainer(this.div);
     this.viewer.resize();
     this.renderer = this.viewer.getRenderer();
     this.renderWindow = this.viewer.getRenderWindow();
-    this.polyData = vtk.Common.DataModel.vtkPolyData.newInstance();
-    this.mapper = vtk.Rendering.Core.vtkSphereMapper.newInstance();
-    this.actor = vtk.Rendering.Core.vtkActor.newInstance();
-    this.lut = vtk.Rendering.Core.vtkColorTransferFunction.newInstance();
+    this.polyData = vtkPolyData.newInstance();
+    this.mapper = vtkSphereMapper.newInstance();
+    this.actor = vtkActor.newInstance();
+    this.lut = vtkColorTransferFunction.newInstance();
 
     this.mapper.setUseLookupTableScalarRange(true);
     this.mapper.setInputData(this.polyData);
@@ -87,9 +97,9 @@ class MultidimensionalPlot {
     this.actor.setMapper(this.mapper);
     this.renderer.addActor(this.actor);
 
-    this.linesPolyData = vtk.Common.DataModel.vtkPolyData.newInstance();
-    this.linesMapper = vtk.Rendering.Core.vtkMapper.newInstance();
-    this.linesActor = vtk.Rendering.Core.vtkActor.newInstance();
+    this.linesPolyData = vtkPolyData.newInstance();
+    this.linesMapper = vtkMapper.newInstance();
+    this.linesActor = vtkActor.newInstance();
 
     this.linesMapper.setInputData(this.linesPolyData);
     this.linesActor.setMapper(this.linesMapper);
@@ -265,7 +275,7 @@ class MultidimensionalPlot {
     this.polyData.getPoints().setData(coords);
     for (let key of scalarKeys) {
       this.polyData.getPointData().addArray(
-        vtk.Common.Core.vtkDataArray.newInstance({name: key, values: scalars[key]})
+        vtkDataArray.newInstance({name: key, values: scalars[key]})
       );
     }
 
@@ -291,7 +301,7 @@ class MultidimensionalPlot {
       sizes[i] = this.radiusFn(sample);
     }
     this.polyData.getPointData().addArray(
-      vtk.Common.Core.vtkDataArray.newInstance({name: 'sizes', values: sizes})
+      vtkDataArray.newInstance({name: 'sizes', values: sizes})
     );
     this.polyData.modified();
     this.renderWindow.render();
@@ -307,8 +317,8 @@ class MultidimensionalPlot {
       }
       composition[i] = 1.0;
       let position = this.compositionToPosition.getPosition(composition)
-        .map(val => 1.2 * val);
-      const labelWidget = vtk.Interaction.Widgets.vtkLabelWidget.newInstance();
+        .map(val => val);
+      const labelWidget = vtkLabelWidget.newInstance();
       labelWidget.setInteractor(this.renderWindow.getInteractor());
       labelWidget.setEnabled(1);
       labelWidget.setProcessEvents(false);

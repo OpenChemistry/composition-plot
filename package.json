@@ -28,7 +28,7 @@
     "d3-transition": "^3.0.1",
     "lodash-es": "^4.17.10",
     "plotly.js": "^2.3.0",
-    "vtk.js": "^13.11.0"
+    "@kitware/vtk.js": "^19.0.4"
   },
   "devDependencies": {
     "@microsoft/api-documenter": "^7.13.23",
