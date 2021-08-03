@@ -1,4 +1,4 @@
-import { ColorMapLegend, CategoryLegend } from 'composition-plot/dist/plots/legend';
+import { ColorMapLegend, CategoryLegend } from 'composition-plot';
 
 function main() {
   {

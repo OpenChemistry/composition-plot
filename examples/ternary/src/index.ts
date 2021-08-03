@@ -1,6 +1,6 @@
 import { ISample } from 'composition-plot';
-import { DataProvider } from 'composition-plot/dist/data-provider';
-import { BasePlot, verticesFnFactory, samplePositionFnFactory, PlotTypes } from 'composition-plot/dist/plots/common';
+import { DataProvider } from 'composition-plot';
+import { BasePlot, verticesFnFactory, samplePositionFnFactory, PlotTypes } from 'composition-plot';
 import {linearScale, createColorMap, RGBColor} from '@colormap/core';
 
 function getSamples(): Promise<ISample[]> {
@@ -54,6 +54,7 @@ function main() {
     const plot = new BasePlot(container, dp, 'foo');
     plot.verticesFn = verticesFn;
     plot.samplePositionFn = samplePositionFn;
+    plot.setCompositionSpace(compositionSpace);
     plot.setColorFn(colorFn);
     plot.setSampleRadius(hexagonRadius);
     plot.render();

@@ -1,6 +1,6 @@
 import { ISample } from 'composition-plot';
-import { MultidimensionalPlot } from 'composition-plot/dist/plots/multidimensional';
-import {DataProvider as MultidimensionalDataProvider, AnalyticalCompositionToPositionProvider} from 'composition-plot/dist/data-provider/multidimensional';
+import { MultidimensionalPlot } from 'composition-plot';
+import {MultidimensionalDataProvider, AnalyticalCompositionToPositionProvider} from 'composition-plot';
 import {RGBColor} from '@colormap/core';
 
 function getSamples(): Promise<ISample[]> {
@@ -21,9 +21,8 @@ function filterSamples(samples: ISample[], elements: string[], threshold: number
 
 function main() {
   getSamples().then(samples => {
-    const compositionSpace = ['A', 'B', 'C'];
+    const compositionSpace = ['A', 'B', 'C', 'D'];
     samples = filterSamples(samples, compositionSpace, 1e-5);
-    console.log(samples);
     const dp = new MultidimensionalDataProvider(compositionSpace.length);
     dp.setData(samples);
     // dp.setActiveScalar(compositionSpace[0]);
