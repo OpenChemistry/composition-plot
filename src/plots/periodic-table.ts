@@ -1,4 +1,4 @@
-import { Selection, BaseType, select, event as _currentEvent } from 'd3-selection';
+import { Selection, BaseType, select } from 'd3-selection';
 import { transition, Transition } from 'd3-transition';
 
 import { rgbToString } from './../utils/colors';
@@ -376,13 +376,13 @@ export class PeriodicTable {
       });
       return cumulated;
     }, [] as ElementDatum[]);
-  
+
     const setupBlocks = (blocks: Selection<BaseType, ElementDatum, BaseType, {}>, t?: Transition<HTMLElement, unknown, null, undefined>) => {
-      blocks = blocks.on('mousedown', d => {
+      blocks = blocks.on('mousedown', (_event, d) => {
         this.onClickFn(d.element);
       });
 
-      const b = t ? blocks.transition(t) : blocks;
+      const b : any = t ? blocks.transition(t) : blocks;
       b
         .attr('x', d => d.x)
         .attr('y', d => d.y)
@@ -400,7 +400,7 @@ export class PeriodicTable {
     const setupText = (texts: Selection<BaseType, ElementDatum, BaseType, {}>, t?: Transition<HTMLElement, unknown, null, undefined>) => {
       texts = texts.text(d => this.titleTextFn(d.element));
 
-      const txts = t ? texts.transition(t) : texts;
+      const txts: any = t ? texts.transition(t) : texts;
       txts
         .attr('fill', d => {
           return rgbToString(...this.textColorFn(d.element));

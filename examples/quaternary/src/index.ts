@@ -1,6 +1,6 @@
 import { ISample } from 'composition-plot';
-import { DataProvider } from 'composition-plot/dist/data-provider';
-import { QuaternaryShellPlot } from 'composition-plot/dist/plots/common';
+import { DataProvider } from 'composition-plot';
+import { QuaternaryShellPlot } from 'composition-plot';
 import {linearScale, createColorMap, RGBColor} from '@colormap/core';
 
 function getSamples(): Promise<ISample[]> {
@@ -23,7 +23,6 @@ function main() {
   getSamples().then(samples => {
     const compositionSpace = ['A', 'B', 'C', 'D'];
     samples = filterSamples(samples, compositionSpace, 1e-5);
-    console.log(samples);
     const dp = new DataProvider(compositionSpace.length);
     dp.setData(samples);
     dp.setActiveAxes(compositionSpace);

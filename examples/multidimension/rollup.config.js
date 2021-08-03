@@ -1,6 +1,8 @@
 import typescript from '@rollup/plugin-typescript';
 import resolve from '@rollup/plugin-node-resolve';
-import copy from 'rollup-plugin-copy'
+import commonJS from '@rollup/plugin-commonjs';
+import copy from 'rollup-plugin-copy';
+import json from '@rollup/plugin-json';
 import { getBabelOutputPlugin } from '@rollup/plugin-babel';
 
 export default [
@@ -12,7 +14,9 @@ export default [
             }
         ],
         plugins: [
+            json(),
             resolve(),
+            commonJS(),
             typescript({ target: 'esnext', declaration: false }),
             getBabelOutputPlugin({ presets: ['@babel/preset-env'] }),
             copy({

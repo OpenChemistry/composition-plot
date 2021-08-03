@@ -127,6 +127,7 @@ export class DataProvider {
 
   setActiveAxes(activeAxes: string[]) {
     this.activeAxes = activeAxes;
+    this.setAxisOrder(activeAxes);
   }
 
   getActiveAxes() {

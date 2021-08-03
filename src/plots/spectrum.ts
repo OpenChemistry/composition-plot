@@ -1,4 +1,4 @@
-import { Selection, BaseType, select, mouse } from 'd3-selection';
+import { Selection, BaseType, select, pointer } from 'd3-selection';
 import { extent } from 'd3-array';
 import { axisBottom, axisLeft } from 'd3-axis';
 // import { line, curveLinearClosed } from 'd3-shape';
@@ -98,6 +98,8 @@ class Spectrum {
 
     this.xLog = false;
     this.yLog = false;
+
+    this.lineColors = [[1, 0, 0]];
 
     this.svg = svg;
     this.dataGroup = select(this.svg)
@@ -335,25 +337,30 @@ class Spectrum {
     let plots = this.dataGroup.selectAll('path')
       .data(this.spectra);
 
+    type Datum = {
+      sample: ISample;
+      path: [number | null, number | null][];
+    }
+
     let lineFn = line()
-      .x((d: any) => d ? this.xScale(d[0]) : null)
-      .y((d: any) => d ? this.yScale(d[1]) : null);
+      .x((d?: [number, number]) => d ? this.xScale(d[0]) : null)
+      .y((d?: [number, number]) => d ? this.yScale(d[1]) : null);
 
     let colorGen = getLineColor(this.lineColors);
 
     const strokeWidth = 1.5;
     const boldStrokeWidth = 3;
 
-    const onMouseOver = (d, i, targets: any) => {
+    const onMouseOver = (event: MouseEvent, d: Datum) => {
       // d is the datum, i is the index in the data
       d;
-      select(targets[i])
-        // .transition()
+      select(event.currentTarget as any)
+      //   // .transition()
         .attr('stroke-width', boldStrokeWidth);
-      let [x, y] = mouse(targets[i]);
+      let [x, y] = pointer(event, this.svg);
       x += this.svg.getBoundingClientRect().left;
       // y += this.svg.getBoundingClientRect().top;
-      const sample = this.spectra[i].sample;
+      const sample = d.sample;
 
       if (isNil(sample)) {
         return;
@@ -373,11 +380,9 @@ class Spectrum {
         .style('transform', 'translateY(-100%)');
     };
 
-    const onMouseOut = (d, i, targets: any) => {
+    const onMouseOut = (event: MouseEvent, d: Datum) => {
       // d is the datum, i is the index in the data
-      d;
-      i;
-      select(targets[i])
+      select(event.currentTarget as any)
         // .transition()
         .attr('stroke-width', strokeWidth);
       this.dataTooltip
@@ -386,14 +391,18 @@ class Spectrum {
 
     // Update
     plots
-      .datum((d, i) => {
+      .datum((d, i): Datum => {
         const [xArray, yArray] = getArrays(d.spectrum, this.plotOptions.xKey, this.plotOptions.yKey, this.xLog, this.yLog);
+        let path: Datum['path'];
         if (!xArray || !yArray) {
-          return [null, null];
+          path = [null, null];
+        } else {
+          path = zip(xArray, yArray.map(val => val + i * this.offset));
         }
-        return zip(xArray, yArray.map(val => val + i * this.offset));
+
+        return {sample: d.sample, path};
       })
-      .attr('d', lineFn)
+      .attr('d', (d) => lineFn(d.path))
       .attr('fill', 'none')
       .attr('stroke-width', strokeWidth)
       .attr('stroke', () => {
@@ -406,14 +415,18 @@ class Spectrum {
     // Enter
     plots.enter()
       .append('path')
-      .datum((d, i) => {
+      .datum((d, i): Datum => {
         const [xArray, yArray] = getArrays(d.spectrum, this.plotOptions.xKey, this.plotOptions.yKey, this.xLog, this.yLog);
+        let path: Datum['path'];
         if (!xArray || !yArray) {
-          return [null, null];
+          path = [null, null];
+        } else {
+          path = zip(xArray, yArray.map(val => val + i * this.offset));
         }
-        return zip(xArray, yArray.map(val => val + i * this.offset));
+
+        return {sample: d.sample, path};
       })
-      .attr('d', lineFn)
+      .attr('d', (d) => lineFn(d.path))
       .attr('fill', 'none')
       .attr('stroke-width', strokeWidth)
       .attr('stroke', () => {
@@ -445,30 +458,35 @@ class Spectrum {
       .append('g')
       .datum((d, i) => {
         const [xArray, yArray] = getArrays(d.spectrum, this.plotOptions.xKey, this.plotOptions.yKey, this.xLog, this.yLog);
+        let path: Datum['path'];
+        if (!xArray || !yArray) {
+          path = [null, null];
+        } else {
+          path = zip(xArray, yArray.map(val => val + i * this.offset));
+        }
 
-        return zip(xArray, yArray.map(val => val + i * this.offset));
+        return {
+          sample: d.sample,
+          path: path
+        }
       })
       .attr('fill', () => {
         const [r, g, b] = colorGen.next().value as Vec3;
         return rgbToString(r, g, b, 0.7);
       })
       .selectAll('circle')
-      .data( d => d);
+      .data( d => d.path.map((p, i) => ({p, i})));
 
-    const onClick = (d, i, targets: any) => {
-      // d is the datum, i is the index in the data
-      d;
-      i;
-      targets;
+    const onClick = (_event: MouseEvent, d: {i: number; p: [number, number]}) => {
       if (this.onSelect) {
-        this.onSelect(i, d);
+        this.onSelect(d.i, d.p);
       }
     }
 
     points.enter().append('circle')
       .attr('r', 4)
-      .attr('cx', (d) => this.xScale(d[0]))
-      .attr('cy', (d) => this.yScale(d[1]))
+      .attr('cx', (d) => this.xScale(d.p[0]))
+      .attr('cy', (d) => this.yScale(d.p[1]))
       .on('click', onClick);
   }
 

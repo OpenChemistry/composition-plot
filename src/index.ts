@@ -12,6 +12,7 @@ export { MultidimensionalPlot, makeCamera } from './plots/multidimensional';
 export { ColorMapLegend, CategoryLegend } from './plots/legend';
 export { DataProvider, HeatMapDataProvider } from './data-provider';
 export { InfoProvider } from './data-provider/info';
+export { IDataProvider, ArrayDataProvider, SplineDataProvider } from './data-provider/spectrum';
 export { ISample } from './types';
 export { combinations } from './utils/combinations';
 export {

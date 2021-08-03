@@ -1,4 +1,4 @@
-import { Selection, BaseType, select, event as currentEvent } from 'd3-selection';
+import { Selection, BaseType, select } from 'd3-selection';
 import { line, curveLinearClosed } from 'd3-shape';
 
 import { RGBColor, Scale } from '@colormap/core';
@@ -553,39 +553,47 @@ class BasePlot {
     }
     const samples = this.dp.getSamples(filter);
 
+    type Datum = {
+      sample: ISample;
+      idx: number;
+      path: Vec2[];
+    }
+
     let hexFn = line()
       .x((d) => d[0])
       .y((d) => d[1])
       .curve(curveLinearClosed);
 
-    const fillFn = (_d, i) => {
-      const [r, g, b] = this.colorFn(samples[i], this.dp);
-      const opacity = this.opacityFn(samples[i], this.dp);
+    const fillFn = (d: Datum) => {
+      const [r, g, b] = this.colorFn(d.sample, this.dp);
+      const opacity = this.opacityFn(d.sample, this.dp);
       return rgbToString(r, g, b, opacity);
     }
 
-    const strokeFn = (_d, i) => {
-      const [r, g, b] = this.borderColorFn(samples[i], this.dp);
+    const strokeFn = (d: Datum) => {
+      const [r, g, b] = this.borderColorFn(d.sample, this.dp);
       return rgbToString(r, g, b);
     }
 
-    const strokeWidthFn = (_d, i) => {
-      return this.borderWidthFn(samples[i], this.dp);
+    const strokeWidthFn = (d: Datum) => {
+      return this.borderWidthFn(d.sample, this.dp);
     }
 
-  const onMouseOver = (_d, i, _hexagons) => {
+  const onMouseOver = (event: MouseEvent, d: Datum) => {
+      const {sample} = d;
+
       if (this.enableTooltip && !this.mouseDown) {
-        const x = currentEvent.clientX;
-        const y = currentEvent.clientY;
+        const x = event.clientX;
+        const y = event.clientY;
         let tooltipHtml = "";
-        Object.entries(samples[i].composition).forEach(([el, frac]) => {
+        Object.entries(sample.composition).forEach(([el, frac]) => {
           if (frac > Number.EPSILON) {
             tooltipHtml += `${this.dp.getAxisLabel(el)}: ${frac.toFixed(2)}<br>`;
           }
         });
 
         const activeScalar = this.dp.getActiveScalar();
-        const scalarValue = DataProvider.getSampleScalar(samples[i], activeScalar);
+        const scalarValue = DataProvider.getSampleScalar(sample, activeScalar);
         if (Number.isFinite(scalarValue)) {
           tooltipHtml += `${activeScalar.replace('\\u002', '.')}: ${scalarValue.toFixed(2)}<br>`;
         }
@@ -604,9 +612,9 @@ class BasePlot {
       .style('display', 'none');
     }
 
-    const onMouseDown = (_d, i) => {
+    const onMouseDown = (_event: MouseEvent, d: Datum) => {
       if (this.onSelect) {
-        this.onSelect(samples[i]);
+        this.onSelect(d.sample);
       }
     }
 
@@ -634,8 +642,8 @@ class BasePlot {
     hexagons
       .enter()
         .append('path')
-        .datum((d) => pathFn(d))
-        .attr('d', hexFn)
+        .datum((d, i) => ({sample: d, path: pathFn(d), idx: i}))
+        .attr('d', (d) => hexFn(d.path))
         .attr('fill', fillFn)
         .attr('stroke', strokeFn)
         .attr('stroke-width', strokeWidthFn)
@@ -645,8 +653,8 @@ class BasePlot {
 
     // Update
     hexagons
-      .datum((d) => pathFn(d))
-      .attr('d', hexFn)
+      .datum((d, i) => ({sample: d, path: pathFn(d), idx: i}))
+      .attr('d', (d) => hexFn(d.path))
       .attr('fill', fillFn)
       .attr('stroke', strokeFn)
       .attr('stroke-width', strokeWidthFn)

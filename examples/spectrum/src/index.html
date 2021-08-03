@@ -1,7 +1,7 @@
 <html>
 
 <head>
-  <title>multidimension example</title>
+  <title>spectrum example</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#000000" />
@@ -10,6 +10,7 @@
 
 <body>
   <div id="root" class="root">
+    <svg id="plot-container" class="container" height="100%"></svg>
   </div>
   <noscript>You need to enable JavaScript to run this app.</noscript>
 </body>
@@ -36,6 +37,11 @@
   }
 
   .root {
+    width:100%;
+    height:100%;
+  }
+
+  .container {
     width:100%;
     height:100%;
   }
