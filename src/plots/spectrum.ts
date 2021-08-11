@@ -352,10 +352,8 @@ class Spectrum {
     const boldStrokeWidth = 3;
 
     const onMouseOver = (event: MouseEvent, d: Datum) => {
-      // d is the datum, i is the index in the data
-      d;
       select(event.currentTarget as any)
-      //   // .transition()
+        // .transition()
         .attr('stroke-width', boldStrokeWidth);
       let [x, y] = pointer(event, this.svg);
       x += this.svg.getBoundingClientRect().left;
@@ -380,8 +378,7 @@ class Spectrum {
         .style('transform', 'translateY(-100%)');
     };
 
-    const onMouseOut = (event: MouseEvent, d: Datum) => {
-      // d is the datum, i is the index in the data
+    const onMouseOut = (event: MouseEvent, _d: Datum) => {
       select(event.currentTarget as any)
         // .transition()
         .attr('stroke-width', strokeWidth);
