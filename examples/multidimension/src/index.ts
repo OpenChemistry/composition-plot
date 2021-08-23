@@ -1,7 +1,7 @@
-import { ISample } from 'composition-plot';
+import { ISample, DataProvider } from 'composition-plot';
 import { MultidimensionalPlot } from 'composition-plot';
 import {MultidimensionalDataProvider, AnalyticalCompositionToPositionProvider} from 'composition-plot';
-import {RGBColor} from '@colormap/core';
+import {linearScale, createColorMap, RGBColor} from '@colormap/core';
 
 function getSamples(): Promise<ISample[]> {
   return fetch('samples.json')
@@ -25,7 +25,7 @@ function main() {
     samples = filterSamples(samples, compositionSpace, 1e-5);
     const dp = new MultidimensionalDataProvider(compositionSpace.length);
     dp.setData(samples);
-    // dp.setActiveScalar(compositionSpace[0]);
+    dp.setActiveScalar(compositionSpace[0]);
     const compositionToPosition = new AnalyticalCompositionToPositionProvider();
 
     const edge = 250;
@@ -45,7 +45,14 @@ function main() {
 
     const plot = new MultidimensionalPlot(container, dp, compositionToPosition);
     plot.setCompositionSpace(compositionSpace);
-    plot.setColorMap(colors, [0, 1]);
+    const scale = linearScale([0, 1], [0, 1]);
+    const colormap = createColorMap(colors, scale);
+
+    plot.setColorFn((sample, dp) => {
+      const scalar = DataProvider.getSampleScalar(sample, dp.getActiveScalar());
+      return colormap(scalar!);
+    });
+
     plot.setBackground('#fafafa');
     plot.dataUpdated();
   });
