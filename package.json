@@ -41,6 +41,7 @@
     "@types/d3-shape": "^3.0.2",
     "@types/d3-transition": "^3.0.1",
     "@types/lodash-es": "^4.17.1",
+    "@types/humanize-duration": "^3.27.1",
     "gh-pages": "^3.2.3",
     "typescript": "^4.3.5"
   },
