@@ -9,7 +9,12 @@ import vtkSphereMapper from '@kitware/vtk.js/Rendering/Core/SphereMapper';
 import vtkMapper from '@kitware/vtk.js/Rendering/Core/Mapper';
 import vtkActor from '@kitware/vtk.js/Rendering/Core/Actor';
 import vtkDataArray from '@kitware/vtk.js/Common/Core/DataArray';
+
+// Hack around issue with vtk.js label representation with retina display
+const ratio = window.devicePixelRatio;
+(window as any).devicePixelRatio = 1;
 import vtkLabelWidget from '@kitware/vtk.js/Interaction/Widgets/LabelWidget';
+(window as any).devicePixelRatio = ratio;
 
 import { DataProvider, ICompositionToPositionProvider } from '../data-provider/multidimensional';
 
